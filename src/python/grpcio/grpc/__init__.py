@@ -39,166 +39,6 @@ import six
 from grpc._cython import cygrpc as _cygrpc
 
 
-############################## Future Interface  ###############################
-
-
-class FutureTimeoutError(Exception):
-  """Indicates that a method call on a Future timed out."""
-
-
-class FutureCancelledError(Exception):
-  """Indicates that the computation underlying a Future was cancelled."""
-
-
-class Future(six.with_metaclass(abc.ABCMeta)):
-  """A representation of a computation in another control flow.
-
-  Computations represented by a Future may be yet to be begun, may be ongoing,
-  or may have already completed.
-  """
-
-  @abc.abstractmethod
-  def cancel(self):
-    """Attempts to cancel the computation.
-
-    This method does not block.
-
-    Returns:
-      True if the computation has not yet begun, will not be allowed to take
-        place, and determination of both was possible without blocking. False
-        under all other circumstances including but not limited to the
-        computation's already having begun, the computation's already having
-        finished, and the computation's having been scheduled for execution on a
-        remote system for which a determination of whether or not it commenced
-        before being cancelled cannot be made without blocking.
-    """
-    raise NotImplementedError()
-
-  @abc.abstractmethod
-  def cancelled(self):
-    """Describes whether the computation was cancelled.
-
-    This method does not block.
-
-    Returns:
-      True if the computation was cancelled any time before its result became
-        immediately available. False under all other circumstances including but
-        not limited to this object's cancel method not having been called and
-        the computation's result having become immediately available.
-    """
-    raise NotImplementedError()
-
-  @abc.abstractmethod
-  def running(self):
-    """Describes whether the computation is taking place.
-
-    This method does not block.
-
-    Returns:
-      True if the computation is scheduled to take place in the future or is
-        taking place now, or False if the computation took place in the past or
-        was cancelled.
-    """
-    raise NotImplementedError()
-
-  @abc.abstractmethod
-  def done(self):
-    """Describes whether the computation has taken place.
-
-    This method does not block.
-
-    Returns:
-      True if the computation is known to have either completed or have been
-        unscheduled or interrupted. False if the computation may possibly be
-        executing or scheduled to execute later.
-    """
-    raise NotImplementedError()
-
-  @abc.abstractmethod
-  def result(self, timeout=None):
-    """Accesses the outcome of the computation or raises its exception.
-
-    This method may return immediately or may block.
-
-    Args:
-      timeout: The length of time in seconds to wait for the computation to
-        finish or be cancelled, or None if this method should block until the
-        computation has finished or is cancelled no matter how long that takes.
-
-    Returns:
-      The return value of the computation.
-
-    Raises:
-      FutureTimeoutError: If a timeout value is passed and the computation does
-        not terminate within the allotted time.
-      FutureCancelledError: If the computation was cancelled.
-      Exception: If the computation raised an exception, this call will raise
-        the same exception.
-    """
-    raise NotImplementedError()
-
-  @abc.abstractmethod
-  def exception(self, timeout=None):
-    """Return the exception raised by the computation.
-
-    This method may return immediately or may block.
-
-    Args:
-      timeout: The length of time in seconds to wait for the computation to
-        terminate or be cancelled, or None if this method should block until
-        the computation is terminated or is cancelled no matter how long that
-        takes.
-
-    Returns:
-      The exception raised by the computation, or None if the computation did
-        not raise an exception.
-
-    Raises:
-      FutureTimeoutError: If a timeout value is passed and the computation does
-        not terminate within the allotted time.
-      FutureCancelledError: If the computation was cancelled.
-    """
-    raise NotImplementedError()
-
-  @abc.abstractmethod
-  def traceback(self, timeout=None):
-    """Access the traceback of the exception raised by the computation.
-
-    This method may return immediately or may block.
-
-    Args:
-      timeout: The length of time in seconds to wait for the computation to
-        terminate or be cancelled, or None if this method should block until
-        the computation is terminated or is cancelled no matter how long that
-        takes.
-
-    Returns:
-      The traceback of the exception raised by the computation, or None if the
-        computation did not raise an exception.
-
-    Raises:
-      FutureTimeoutError: If a timeout value is passed and the computation does
-        not terminate within the allotted time.
-      FutureCancelledError: If the computation was cancelled.
-    """
-    raise NotImplementedError()
-
-  @abc.abstractmethod
-  def add_done_callback(self, fn):
-    """Adds a function to be called at completion of the computation.
-
-    The callback will be passed this Future object describing the outcome of
-    the computation.
-
-    If the computation has already completed, the callback will be called
-    immediately.
-
-    Args:
-      fn: A callable taking this Future object as its single parameter.
-    """
-    raise NotImplementedError()
-
-
 ################################  gRPC Enums  ##################################
 
 
@@ -253,7 +93,12 @@ class StatusCode(enum.Enum):
 
 
 class RpcError(Exception):
-  """Raised by the gRPC library to indicate non-OK-status RPC termination."""
+  """Raised by the gRPC library to indicate non-OK-status RPC termination.
+  
+  Attributes:
+    code : The status code of the response
+    details : The details of the response
+  """
 
 
 ##############################  Shared Context  ################################
@@ -291,12 +136,10 @@ class RpcContext(six.with_metaclass(abc.ABCMeta)):
     """Registers a callback to be called on RPC termination.
 
     Args:
-      callback: A no-parameter callable to be called on RPC termination.
+      callback: A callable that accepts this RpcContext to be invoked on
+        on RPC termination.  `callback` will be invoked immediatley if the RPC
+        has already terminated.
 
-    Returns:
-      True if the callback was added and will be called later; False if the
-        callback was not added and will not later be called (because the RPC
-        already terminated or some other reason).
     """
     raise NotImplementedError()
 
@@ -348,6 +191,41 @@ class Call(six.with_metaclass(abc.ABCMeta, RpcContext)):
 
     Returns:
       The bytes of the details of the RPC.
+    """
+    raise NotImplementedError()
+
+
+class UnaryCall(six.with_metaclass(abc.ABCMeta, Call)):
+  
+  @abc.abstractmethod
+  def response(self):
+    """Access the response value emitted by the service-side of the RPC.
+   
+    This method blocks until the value is available.
+
+    Returns:
+      The response value for the RPC.
+
+    Raises:
+      RpcError: Indicating that the RPC terminated with non-OK status.
+    """
+    raise NotImplementedError()
+
+
+class StreamingCall(six.with_metaclass(abc.ABCMeta, Call)):
+
+  @abc.abstractmethod
+  def response_iterator(self):
+    """Access the response values emitted by the service-side of the RPC.
+   
+    This method blocks until the first response is available.
+
+    Returns:
+      An iterator of response values. 
+      Drawing response values from the returned iterator may raise RpcError.
+
+    Raises:
+      RpcError: Indicating that the RPC terminated with non-OK status.
     """
     raise NotImplementedError()
 
@@ -439,8 +317,7 @@ class UnaryUnaryMultiCallable(six.with_metaclass(abc.ABCMeta)):
 
   @abc.abstractmethod
   def __call__(
-      self, request, timeout=None, metadata=None, credentials=None,
-      with_call=False):
+      self, request, timeout=None, metadata=None, credentials=None):
     """Synchronously invokes the underlying RPC.
 
     Args:
@@ -449,36 +326,10 @@ class UnaryUnaryMultiCallable(six.with_metaclass(abc.ABCMeta)):
       metadata: An optional sequence of pairs of bytes to be transmitted to the
         service-side of the RPC.
       credentials: An optional CallCredentials for the RPC.
-      with_call: Whether or not to include return a Call for the RPC in addition
-        to the response.
 
     Returns:
-      The response value for the RPC, and a Call for the RPC if with_call was
-        set to True at invocation.
+      A UnaryCall for the RPC.
 
-    Raises:
-      RpcError: Indicating that the RPC terminated with non-OK status. The
-        raised RpcError will also be a Call for the RPC affording the RPC's
-        metadata, status code, and details.
-    """
-    raise NotImplementedError()
-
-  @abc.abstractmethod
-  def future(self, request, timeout=None, metadata=None, credentials=None):
-    """Asynchronously invokes the underlying RPC.
-
-    Args:
-      request: The request value for the RPC.
-      timeout: An optional duration of time in seconds to allow for the RPC.
-      metadata: An optional sequence of pairs of bytes to be transmitted to the
-        service-side of the RPC.
-      credentials: An optional CallCredentials for the RPC.
-
-    Returns:
-      An object that is both a Call for the RPC and a Future. In the event of
-        RPC completion, the return Future's result value will be the response
-        message of the RPC. Should the event terminate with non-OK status, the
-        returned Future's exception value will be an RpcError.
     """
     raise NotImplementedError()
 
@@ -498,9 +349,7 @@ class UnaryStreamMultiCallable(six.with_metaclass(abc.ABCMeta)):
       credentials: An optional CallCredentials for the RPC.
 
     Returns:
-      An object that is both a Call for the RPC and an iterator of response
-        values. Drawing response values from the returned iterator may raise
-        RpcError indicating termination of the RPC with non-OK status.
+      A StreamCall for the RPC.
     """
     raise NotImplementedError()
 
@@ -510,8 +359,7 @@ class StreamUnaryMultiCallable(six.with_metaclass(abc.ABCMeta)):
 
   @abc.abstractmethod
   def __call__(
-      self, request_iterator, timeout=None, metadata=None, credentials=None,
-      with_call=False):
+      self, request_iterator, timeout=None, metadata=None, credentials=None):
     """Synchronously invokes the underlying RPC.
 
     Args:
@@ -520,37 +368,9 @@ class StreamUnaryMultiCallable(six.with_metaclass(abc.ABCMeta)):
       metadata: An optional sequence of pairs of bytes to be transmitted to the
         service-side of the RPC.
       credentials: An optional CallCredentials for the RPC.
-      with_call: Whether or not to include return a Call for the RPC in addition
-        to the response.
 
     Returns:
-      The response value for the RPC, and a Call for the RPC if with_call was
-        set to True at invocation.
-
-    Raises:
-      RpcError: Indicating that the RPC terminated with non-OK status. The
-        raised RpcError will also be a Call for the RPC affording the RPC's
-        metadata, status code, and details.
-    """
-    raise NotImplementedError()
-
-  @abc.abstractmethod
-  def future(
-      self, request_iterator, timeout=None, metadata=None, credentials=None):
-    """Asynchronously invokes the underlying RPC.
-
-    Args:
-      request_iterator: An iterator that yields request values for the RPC.
-      timeout: An optional duration of time in seconds to allow for the RPC.
-      metadata: An optional sequence of pairs of bytes to be transmitted to the
-        service-side of the RPC.
-      credentials: An optional CallCredentials for the RPC.
-
-    Returns:
-      An object that is both a Call for the RPC and a Future. In the event of
-        RPC completion, the return Future's result value will be the response
-        message of the RPC. Should the event terminate with non-OK status, the
-        returned Future's exception value will be an RpcError.
+      A UnaryCall for the RPC.
     """
     raise NotImplementedError()
 
@@ -571,9 +391,7 @@ class StreamStreamMultiCallable(six.with_metaclass(abc.ABCMeta)):
       credentials: An optional CallCredentials for the RPC.
 
     Returns:
-      An object that is both a Call for the RPC and an iterator of response
-        values. Drawing response values from the returned iterator may raise
-        RpcError indicating termination of the RPC with non-OK status.
+      A StreamCall for the RPC.
     """
     raise NotImplementedError()
 
@@ -1030,17 +848,17 @@ def ssl_server_credentials(
 
 
 def channel_ready_future(channel):
-  """Creates a Future tracking when a Channel is ready.
+  """Creates a futures.Future tracking when a Channel is ready.
 
-  Cancelling the returned Future does not tell the given Channel to abandon
+  Cancelling the returned futures.Future does not tell the given Channel to abandon
   attempts it may have been making to connect; cancelling merely deactivates the
-  returned Future's subscription to the given Channel's connectivity.
+  returned futures.Future's subscription to the given Channel's connectivity.
 
   Args:
     channel: A Channel.
 
   Returns:
-    A Future that matures when the given Channel has connectivity
+    A futures.Future that matures when the given Channel has connectivity
       ChannelConnectivity.READY.
   """
   from grpc import _utilities
@@ -1078,7 +896,7 @@ def secure_channel(target, credentials, options=None):
   return _channel.Channel(target, credentials, options)
 
 
-def server(generic_rpc_handlers, thread_pool, options=None):
+def server(thread_pool, generic_rpc_handlers=()):
   """Creates a Server with which RPCs can be serviced.
 
   The GenericRpcHandlers passed to this function needn't be the only
@@ -1087,10 +905,10 @@ def server(generic_rpc_handlers, thread_pool, options=None):
   started.
 
   Args:
-    generic_rpc_handlers: Some number of GenericRpcHandlers that will be used
-      to service RPCs after the returned Server is started.
     thread_pool: A futures.ThreadPoolExecutor to be used by the returned Server
       to service RPCs.
+    generic_rpc_handlers: Some number of GenericRpcHandlers that will be used
+      to service RPCs after the returned Server is started.
 
   Returns:
     A Server with which RPCs can be serviced.
