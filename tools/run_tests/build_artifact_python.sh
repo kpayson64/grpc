@@ -47,6 +47,7 @@ BUILD_DIR=`mktemp -d "${TMPDIR:-/tmp}/pygrpc.XXXXXX"`
 trap "rm -rf $BUILD_DIR" EXIT
 cp -r * "$BUILD_DIR"
 cd "$BUILD_DIR"
+ls third_party/zlib
 
 # Build the source distribution first because MANIFEST.in cannot override
 # exclusion of built shared objects among package resources (for some
