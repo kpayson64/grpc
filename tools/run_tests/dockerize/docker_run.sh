@@ -36,6 +36,7 @@ set -ex
 if [ "$RELATIVE_COPY_PATH" == "" ]
 then
   mkdir -p /var/local/git
+  ls /var/local/jenkins/grpc/third_party
   git clone $EXTERNAL_GIT_ROOT /var/local/git/grpc
   # clone gRPC submodules, use data from locally cloned submodules where possible
   (cd ${EXTERNAL_GIT_ROOT} && git submodule foreach 'cd /var/local/git/grpc \
