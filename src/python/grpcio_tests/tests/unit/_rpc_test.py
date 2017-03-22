@@ -519,10 +519,11 @@ class RPCTest(unittest.TestCase):
         self.assertIsNotNone(response_iterator.trailing_metadata())
 
     def testCancelledStreamRequestUnaryResponse(self):
+        print "1"
         requests = tuple(b'\x07\x08'
                          for _ in range(test_constants.STREAM_LENGTH))
         request_iterator = iter(requests)
-
+        print "2"
         multi_callable = _stream_unary_multi_callable(self._channel)
         with self._control.pause():
             response_future = multi_callable.future(
@@ -530,14 +531,17 @@ class RPCTest(unittest.TestCase):
                 metadata=(('test', 'CancelledStreamRequestUnaryResponse'),))
             self._control.block_until_paused()
             response_future.cancel()
-
+        print "3"
         self.assertTrue(response_future.cancelled())
         with self.assertRaises(grpc.FutureCancelledError):
             response_future.result()
+        print "4"
         with self.assertRaises(grpc.FutureCancelledError):
             response_future.exception()
+        print "5"
         with self.assertRaises(grpc.FutureCancelledError):
             response_future.traceback()
+        print "6"
         self.assertIsNotNone(response_future.initial_metadata())
         self.assertIs(grpc.StatusCode.CANCELLED, response_future.code())
         self.assertIsNotNone(response_future.details())

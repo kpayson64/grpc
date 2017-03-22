@@ -27,10 +27,14 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """Service-side implementation of gRPC Python."""
+from __future__ import division
 
 import collections
 import enum
 import logging
+import os
+import sets
+import signal
 import threading
 import time
 
@@ -747,6 +751,35 @@ def _start(state):
         thread.start()
 
 
+class _ForkedServerProcess(object):
+  def __init__(self, pid, shutdown_fd):
+    self.pid = pid
+    self._shutdown_fd = shutdown_fd
+
+  def shutdown(self, grace):
+    if grace is None:
+      grace = 0
+    handle = os.fdopen(self._shutdown_fd, 'w', 0)
+    handle.write(str(int(grace * 1000)) + '\n')
+    handle.flush()
+    handle.close()
+    
+
+def _run_server_process(state, shutdown_fd):
+  _start(state)
+  handle = os.fdopen(shutdown_fd, 'r', 0)
+  grace_ms = int(handle.readline().rstrip('\n'))
+  _stop(state, grace_ms/1000).wait()
+  handle.close()
+
+
+def _await(children, grace):
+  for child in children:
+    child.shutdown(grace)
+  for child in children:
+    os.waitpid(child.pid, 0)
+
+
 class Server(grpc.Server):
 
     def __init__(self, thread_pool, generic_handlers, options):
@@ -755,6 +788,8 @@ class Server(grpc.Server):
         server.register_completion_queue(completion_queue)
         self._state = _ServerState(completion_queue, server, generic_handlers,
                                    thread_pool)
+        self._num_processes = 10
+        self._children = []
 
     def add_generic_rpc_handlers(self, generic_rpc_handlers):
         _add_generic_handlers(self._state, generic_rpc_handlers)
@@ -767,10 +802,32 @@ class Server(grpc.Server):
                                 _common.encode(address), server_credentials)
 
     def start(self):
+        for i in range(self._num_processes):
+            read_fd, write_fd = os.pipe()
+            cygrpc.prefork()
+            child_pid = os.fork()
+            if child_pid != 0:
+                os.close(read_fd)
+                self._children.append(_ForkedServerProcess(child_pid, write_fd))
+            else:
+              try:
+                cygrpc.postfork_child()
+                os.close(write_fd)
+                _run_server_process(self._state, read_fd)
+              finally:
+                os._exit(0)
         _start(self._state)
 
+
     def stop(self, grace):
-        return _stop(self._state, grace)
+        event = threading.Event()
+        if grace is None:
+            _await(self._children, grace)
+        else:
+            thread = threading.Thread(
+                target=_await, args=(self._children, grace))
+            thread.start()
+        return event
 
     def __del__(self):
         _stop(self._state, None)

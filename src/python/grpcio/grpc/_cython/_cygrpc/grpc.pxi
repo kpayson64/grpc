@@ -502,3 +502,7 @@ cdef extern from "grpc/compression.h":
       const grpc_compression_options *opts,
       grpc_compression_algorithm algorithm) nogil
 
+cdef extern from "grpc/fork.h":
+  void grpc_prefork()
+
+  void grpc_postfork_child()
