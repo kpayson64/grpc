@@ -234,6 +234,9 @@ typedef struct {
 #define GRPC_ARG_RESOURCE_QUOTA "grpc.resource_quota"
 /** If non-zero, expand wildcard addresses to a list of local addresses. */
 #define GRPC_ARG_EXPAND_WILDCARD_ADDRS "grpc.expand_wildcard_addrs"
+/** If non-zero, the maximum number of accept() calls to make when requesting a
+ * call */
+#define GRPC_ARG_MAX_CONSECUTIVE_ACCEPT "grpc.max_consecutive_accept"
 /** Service config data in JSON form. Not intended for use outside of tests. */
 #define GRPC_ARG_SERVICE_CONFIG "grpc.service_config"
 /** LB policy name. */

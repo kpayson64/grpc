@@ -82,6 +82,7 @@ static void init(void) {
 #endif
 }
 
+
 grpc_error *grpc_tcp_server_create(grpc_exec_ctx *exec_ctx,
                                    grpc_closure *shutdown_complete,
                                    const grpc_channel_args *args,
@@ -219,11 +220,59 @@ static void tcp_server_destroy(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s) {
       grpc_fd_shutdown(exec_ctx, sp->emfd,
                        GRPC_ERROR_CREATE("Server destroyed"));
     }
+
     gpr_mu_unlock(&s->mu);
   } else {
     gpr_mu_unlock(&s->mu);
     deactivated_all_ports(exec_ctx, s);
   }
+}
+
+static int listener_socket_postfork_handler(grpc_fd *fd) {
+  grpc_fd_disable_shutdown(fd);
+  return grpc_fd_wrapped_fd(fd);
+}
+
+static int listener_socket_postfork_handler_so_reuseport(grpc_fd *fd) {
+  int old_fd = grpc_fd_wrapped_fd(fd);
+  int new_fd = -1;
+
+  grpc_error *err = GRPC_ERROR_NONE;
+  grpc_resolved_address addr;
+  addr.len = GRPC_MAX_SOCKADDR_SIZE;
+  if (getsockname(old_fd, (struct sockaddr *)addr.addr,
+                  (socklen_t *)&addr.len) < 0) {
+    err = GRPC_OS_ERROR(errno, "getsockname");
+    goto error;
+  }
+  int port;
+  grpc_dualstack_mode dsmode;
+  err = grpc_create_dualstack_socket(&addr, SOCK_STREAM, 0, &dsmode, &new_fd);
+  if (err != GRPC_ERROR_NONE) {
+    goto error;
+  }
+
+  err = grpc_tcp_server_prepare_socket(new_fd, &addr, true, &port);
+  if (err != GRPC_ERROR_NONE) {
+    goto error;
+  }
+  close(old_fd);
+  return new_fd;
+
+error:
+  // This is not fatal, we just can't use the SO_REUSEPORT optimization
+  GPR_ASSERT(err != GRPC_ERROR_NONE);
+  if (new_fd >= 0) {
+    close(new_fd);
+  }
+  grpc_error *ret = grpc_error_set_int(
+      GRPC_ERROR_CREATE_REFERENCING("Unable to reset socket", &err, 1),
+      GRPC_ERROR_INT_FD, old_fd);
+  gpr_log(GPR_ERROR, "%s", grpc_error_string(ret));
+  GRPC_ERROR_UNREF(err);
+  GRPC_ERROR_UNREF(ret);
+  grpc_fd_disable_shutdown(fd);
+  return old_fd;
 }
 
 /* event manager callback when reads are ready */
@@ -233,7 +282,6 @@ static void on_read(grpc_exec_ctx *exec_ctx, void *arg, grpc_error *err) {
   if (err != GRPC_ERROR_NONE) {
     goto error;
   }
-
   grpc_pollset *read_notifier_pollset =
       sp->server->pollsets[(size_t)gpr_atm_no_barrier_fetch_add(
                                &sp->server->next_pollset_to_assign, 1) %
@@ -247,7 +295,7 @@ static void on_read(grpc_exec_ctx *exec_ctx, void *arg, grpc_error *err) {
     addr.len = sizeof(struct sockaddr_storage);
     /* Note: If we ever decide to return this address to the user, remember to
        strip off the ::ffff:0.0.0.0/96 prefix first. */
-    int fd = grpc_accept4(sp->fd, &addr, 1, 1);
+    int fd = grpc_accept4(grpc_fd_wrapped_fd(sp->emfd), &addr, 1, 1);
     if (fd < 0) {
       switch (errno) {
         case EINTR:
@@ -406,7 +454,6 @@ static grpc_error *clone_port(grpc_tcp_listener *listener, unsigned count) {
     sp->sibling = listener->sibling;
     listener->sibling = sp;
     sp->server = listener->server;
-    sp->fd = fd;
     sp->emfd = grpc_fd_create(fd, name);
     memcpy(&sp->addr, &listener->addr, sizeof(grpc_resolved_address));
     sp->port = port;
@@ -444,7 +491,8 @@ grpc_error *grpc_tcp_server_add_port(grpc_tcp_server *s,
   if (requested_port == 0) {
     for (sp = s->head; sp; sp = sp->next) {
       sockname_temp.len = sizeof(struct sockaddr_storage);
-      if (0 == getsockname(sp->fd, (struct sockaddr *)&sockname_temp.addr,
+      if (0 == getsockname(grpc_fd_wrapped_fd(sp->emfd),
+                           (struct sockaddr *)&sockname_temp.addr,
                            (socklen_t *)&sockname_temp.len)) {
         int used_port = grpc_sockaddr_get_port(&sockname_temp);
         if (used_port > 0) {
@@ -468,6 +516,13 @@ grpc_error *grpc_tcp_server_add_port(grpc_tcp_server *s,
       GRPC_ERROR_NONE) {
     *out_port = sp->port;
   }
+  if (s->so_reuseport) {
+    grpc_fd_register_postfork_handler(
+        sp->emfd, listener_socket_postfork_handler_so_reuseport);
+  } else {
+    grpc_fd_register_postfork_handler(sp->emfd, listener_socket_postfork_handler);
+  }
+
   return err;
 }
 
@@ -506,7 +561,7 @@ int grpc_tcp_server_port_fd(grpc_tcp_server *s, unsigned port_index,
   for (; sp; sp = sp->sibling, --fd_index) {
     if (fd_index == 0) {
       gpr_mu_unlock(&s->mu);
-      return sp->fd;
+      return grpc_fd_wrapped_fd(sp->emfd);
     }
   }
   gpr_mu_unlock(&s->mu);

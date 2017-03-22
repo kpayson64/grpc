@@ -46,6 +46,9 @@
     <ClCompile Include="$(SolutionDir)\..\src\core\lib\support\env_windows.c">
       <Filter>src\core\lib\support</Filter>
     </ClCompile>
+    <ClCompile Include="$(SolutionDir)\..\src\core\lib\support\fork.c">
+      <Filter>src\core\lib\support</Filter>
+    </ClCompile>
     <ClCompile Include="$(SolutionDir)\..\src\core\lib\support\histogram.c">
       <Filter>src\core\lib\support</Filter>
     </ClCompile>
@@ -270,6 +273,9 @@
       <Filter>src\core\lib\support</Filter>
     </ClInclude>
     <ClInclude Include="$(SolutionDir)\..\src\core\lib\support\env.h">
+      <Filter>src\core\lib\support</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SolutionDir)\..\src\core\lib\support\fork.h">
       <Filter>src\core\lib\support</Filter>
     </ClInclude>
     <ClInclude Include="$(SolutionDir)\..\src\core\lib\support\mpscq.h">
