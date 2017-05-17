@@ -53,9 +53,14 @@ cd "$BUILD_DIR"
 # inexplicable reason).
 ${SETARCH_CMD} ${PYTHON} setup.py sdist
 
-# Wheel has a bug where directories don't get excluded.
-# https://bitbucket.org/pypa/wheel/issues/99/cannot-exclude-directory
-${SETARCH_CMD} ${PYTHON} setup.py bdist_wheel
+if [ "$GRPC_BUILD_EGG" != "" ]
+then
+  ${SETARCH_CMD} ${PYTHON} setup.py bdist_egg
+else
+  # Wheel has a bug where directories don't get excluded.
+  # https://bitbucket.org/pypa/wheel/issues/99/cannot-exclude-directory
+  ${SETARCH_CMD} ${PYTHON} setup.py bdist_wheel
+fi
 
 # Build gRPC tools package distribution
 ${PYTHON} tools/distrib/python/make_grpcio_tools.py

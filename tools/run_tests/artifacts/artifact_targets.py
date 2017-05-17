@@ -106,6 +106,7 @@ class PythonArtifact:
     environ = {}
     if self.platform == 'linux_extra':
       # Raspberry Pi build
+      environ['GRPC_BUILD_EGG'] = 'True' #PyPi doesn't support arm wheels
       environ['PYTHON'] = '/usr/local/bin/python{}'.format(self.py_version)
       environ['PIP'] = '/usr/local/bin/pip{}'.format(self.py_version)
       # https://github.com/resin-io-projects/armv7hf-debian-qemu/issues/9
