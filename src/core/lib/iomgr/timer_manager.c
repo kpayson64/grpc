@@ -338,6 +338,7 @@ void grpc_timer_manager_set_threading(bool threaded) {
   }
 }
 
+/*
 void grpc_kick_poller(void) {
   gpr_mu_lock(&g_mu);
   g_kicked = true;
@@ -347,3 +348,4 @@ void grpc_kick_poller(void) {
   gpr_cv_signal(&g_cv_wait);
   gpr_mu_unlock(&g_mu);
 }
+*/
