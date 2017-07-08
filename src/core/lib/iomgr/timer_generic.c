@@ -232,13 +232,14 @@ void grpc_timer_init(grpc_exec_ctx *exec_ctx, grpc_timer *timer,
   GPR_ASSERT(deadline.clock_type == g_clock_type);
   GPR_ASSERT(now.clock_type == g_clock_type);
   timer->closure = closure;
-  gpr_atm deadline_atm = timer->deadline = timespec_to_atm_round_up(deadline);
+  timer->deadline = timespec_to_atm_round_up(deadline);
 
   if (GRPC_TRACER_ON(grpc_timer_trace)) {
     gpr_log(GPR_DEBUG, "TIMER %p: SET %" PRId64 ".%09d [%" PRIdPTR
                        "] now %" PRId64 ".%09d [%" PRIdPTR "] call %p[%p]",
-            timer, deadline.tv_sec, deadline.tv_nsec, deadline_atm, now.tv_sec,
-            now.tv_nsec, timespec_to_atm_round_down(now), closure, closure->cb);
+            timer, deadline.tv_sec, deadline.tv_nsec, timer->deadline,
+            now.tv_sec, now.tv_nsec, timespec_to_atm_round_down(now), closure,
+            closure->cb);
   }
 
   if (!g_shared_mutables.initialized) {
@@ -261,7 +262,7 @@ void grpc_timer_init(grpc_exec_ctx *exec_ctx, grpc_timer *timer,
 
   grpc_time_averaged_stats_add_sample(&shard->stats,
                                       ts_to_dbl(gpr_time_sub(deadline, now)));
-  if (deadline_atm < shard->queue_deadline_cap) {
+  if (timer->deadline < shard->queue_deadline_cap) {
     is_first_timer = grpc_timer_heap_add(&shard->heap, timer);
   } else {
     timer->heap_index = INVALID_HEAP_INDEX;
@@ -292,12 +293,12 @@ void grpc_timer_init(grpc_exec_ctx *exec_ctx, grpc_timer *timer,
       gpr_log(GPR_DEBUG, "  .. old shard min_deadline=%" PRIdPTR,
               shard->min_deadline);
     }
-    if (deadline_atm < shard->min_deadline) {
+    if (timer->deadline < shard->min_deadline) {
       gpr_atm old_min_deadline = g_shard_queue[0]->min_deadline;
-      shard->min_deadline = deadline_atm;
+      shard->min_deadline = timer->deadline;
       note_deadline_change(shard);
-      if (shard->shard_queue_index == 0 && deadline_atm < old_min_deadline) {
-        gpr_atm_no_barrier_store(&g_shared_mutables.min_timer, deadline_atm);
+    if (shard->shard_queue_index == 0 && timer->deadline < old_min_deadline) {
+        gpr_atm_no_barrier_store(&g_shared_mutables.min_timer, timer->deadline);
         grpc_kick_poller();
       }
     }
