@@ -477,7 +477,7 @@ void grpc_cq_internal_unref(grpc_exec_ctx *exec_ctx,
   cq_data *cqd = &cc->data;
 #endif
   if (gpr_unref(&cqd->owning_refs)) {
-    //GPR_ASSERT(cqd->completed_head.next == (uintptr_t)&cqd->completed_head);
+    GPR_ASSERT(cqd->completed_head.next == (uintptr_t)&cqd->completed_head);
     cc->poller_vtable->destroy(exec_ctx, POLLSET_FROM_CQ(cc));
     cq_event_queue_destroy(&cqd->queue);
 #ifndef NDEBUG
@@ -1034,7 +1034,8 @@ static grpc_event cq_pluck(grpc_completion_queue *cc, void *tag,
        each time through on every pollset.
        May update deadline to ensure timely wakeups.
        TODO(ctiller): can this work be localized? */
-    if (grpc_timer_check(&exec_ctx, now, &deadline)) {
+    gpr_timespec iteration_deadline = deadline;
+    if (grpc_timer_check(&exec_ctx, now, &iteration_deadline)) {
       GPR_TIMER_MARK("alarm_triggered", 0);
       gpr_log(GPR_ERROR, "GOT ALARM");
       gpr_mu_unlock(cqd->mu);
@@ -1043,7 +1044,7 @@ static grpc_event cq_pluck(grpc_completion_queue *cc, void *tag,
     } else {
       cqd->num_polls++;
       grpc_error *err = cc->poller_vtable->work(
-          &exec_ctx, POLLSET_FROM_CQ(cc), &worker, now, deadline);
+          &exec_ctx, POLLSET_FROM_CQ(cc), &worker, now, iteration_deadline);
       if (err != GRPC_ERROR_NONE) {
         del_plucker(cc, tag, &worker);
         gpr_mu_unlock(cqd->mu);
