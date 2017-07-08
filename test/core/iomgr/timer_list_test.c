@@ -73,19 +73,17 @@ static void add_test(void) {
 
   /* collect timers.  Only the first batch should be ready. */
   GPR_ASSERT(grpc_timer_check(
-                 &exec_ctx,
-                 gpr_time_add(start, gpr_time_from_millis(500, GPR_TIMESPAN)),
-                 NULL) == GRPC_TIMERS_FIRED);
+      &exec_ctx, gpr_time_add(start, gpr_time_from_millis(500, GPR_TIMESPAN)),
+      NULL));
   grpc_exec_ctx_finish(&exec_ctx);
   for (i = 0; i < 20; i++) {
     GPR_ASSERT(cb_called[i][1] == (i < 10));
     GPR_ASSERT(cb_called[i][0] == 0);
   }
 
-  GPR_ASSERT(grpc_timer_check(
-                 &exec_ctx,
-                 gpr_time_add(start, gpr_time_from_millis(600, GPR_TIMESPAN)),
-                 NULL) == GRPC_TIMERS_CHECKED_AND_EMPTY);
+  GPR_ASSERT(!grpc_timer_check(
+      &exec_ctx, gpr_time_add(start, gpr_time_from_millis(600, GPR_TIMESPAN)),
+      NULL));
   grpc_exec_ctx_finish(&exec_ctx);
   for (i = 0; i < 30; i++) {
     GPR_ASSERT(cb_called[i][1] == (i < 10));
@@ -94,19 +92,17 @@ static void add_test(void) {
 
   /* collect the rest of the timers */
   GPR_ASSERT(grpc_timer_check(
-                 &exec_ctx,
-                 gpr_time_add(start, gpr_time_from_millis(1500, GPR_TIMESPAN)),
-                 NULL) == GRPC_TIMERS_FIRED);
+      &exec_ctx, gpr_time_add(start, gpr_time_from_millis(1500, GPR_TIMESPAN)),
+      NULL));
   grpc_exec_ctx_finish(&exec_ctx);
   for (i = 0; i < 30; i++) {
     GPR_ASSERT(cb_called[i][1] == (i < 20));
     GPR_ASSERT(cb_called[i][0] == 0);
   }
 
-  GPR_ASSERT(grpc_timer_check(
-                 &exec_ctx,
-                 gpr_time_add(start, gpr_time_from_millis(1600, GPR_TIMESPAN)),
-                 NULL) == GRPC_TIMERS_CHECKED_AND_EMPTY);
+  GPR_ASSERT(!grpc_timer_check(
+      &exec_ctx, gpr_time_add(start, gpr_time_from_millis(1600, GPR_TIMESPAN)),
+      NULL));
   for (i = 0; i < 30; i++) {
     GPR_ASSERT(cb_called[i][1] == (i < 20));
     GPR_ASSERT(cb_called[i][0] == 0);
@@ -152,7 +148,7 @@ void destruction_test(void) {
       &exec_ctx, &timers[4], tfm(1),
       GRPC_CLOSURE_CREATE(cb, (void *)(intptr_t)4, grpc_schedule_on_exec_ctx),
       gpr_time_0(GPR_CLOCK_REALTIME));
-  GPR_ASSERT(grpc_timer_check(&exec_ctx, tfm(2), NULL) == GRPC_TIMERS_FIRED);
+  GPR_ASSERT(1 == grpc_timer_check(&exec_ctx, tfm(2), NULL));
   grpc_exec_ctx_finish(&exec_ctx);
   GPR_ASSERT(1 == cb_called[4][1]);
   grpc_timer_cancel(&exec_ctx, &timers[0]);

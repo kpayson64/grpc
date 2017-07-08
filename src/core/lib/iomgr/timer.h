@@ -74,12 +74,6 @@ void grpc_timer_cancel(grpc_exec_ctx *exec_ctx, grpc_timer *timer);
 
 /* iomgr internal api for dealing with timers */
 
-typedef enum {
-  GRPC_TIMERS_NOT_CHECKED,
-  GRPC_TIMERS_CHECKED_AND_EMPTY,
-  GRPC_TIMERS_FIRED,
-} grpc_timer_check_result;
-
 /* Check for timers to be run, and run them.
    Return true if timer callbacks were executed.
    If next is non-null, TRY to update *next with the next running timer
@@ -87,8 +81,8 @@ typedef enum {
    *next is never guaranteed to be updated on any given execution; however,
    with high probability at least one thread in the system will see an update
    at any time slice. */
-grpc_timer_check_result grpc_timer_check(grpc_exec_ctx *exec_ctx,
-                                         gpr_timespec now, gpr_timespec *next);
+bool grpc_timer_check(grpc_exec_ctx *exec_ctx, gpr_timespec now,
+                      gpr_timespec *next);
 void grpc_timer_list_init(gpr_timespec now);
 void grpc_timer_list_shutdown(grpc_exec_ctx *exec_ctx);
 

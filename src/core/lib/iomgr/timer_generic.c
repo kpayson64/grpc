@@ -86,10 +86,8 @@ static gpr_atm saturating_add(gpr_atm a, gpr_atm b) {
   return a + b;
 }
 
-static grpc_timer_check_result run_some_expired_timers(grpc_exec_ctx *exec_ctx,
-                                                       gpr_atm now,
-                                                       gpr_atm *next,
-                                                       grpc_error *error);
+static int run_some_expired_timers(grpc_exec_ctx *exec_ctx, gpr_atm now,
+                                   gpr_atm *next, grpc_error *error);
 
 static gpr_timespec dbl_to_ts(double d) {
   gpr_timespec ts;
@@ -408,22 +406,19 @@ static size_t pop_timers(grpc_exec_ctx *exec_ctx, shard_type *shard,
   return n;
 }
 
-static grpc_timer_check_result run_some_expired_timers(grpc_exec_ctx *exec_ctx,
-                                                       gpr_atm now,
-                                                       gpr_atm *next,
-                                                       grpc_error *error) {
-  grpc_timer_check_result result = GRPC_TIMERS_NOT_CHECKED;
+static int run_some_expired_timers(grpc_exec_ctx *exec_ctx, gpr_atm now,
+                                   gpr_atm *next, grpc_error *error) {
+  size_t n = 0;
 
   gpr_atm min_timer = gpr_atm_no_barrier_load(&g_shared_mutables.min_timer);
   gpr_tls_set(&g_last_seen_min_timer, min_timer);
   if (now < min_timer) {
     if (next != NULL) *next = GPR_MIN(*next, min_timer);
-    return GRPC_TIMERS_CHECKED_AND_EMPTY;
+    return 0;
   }
 
   if (gpr_spinlock_trylock(&g_shared_mutables.checker_mu)) {
     gpr_mu_lock(&g_shared_mutables.mu);
-    result = GRPC_TIMERS_CHECKED_AND_EMPTY;
 
     if (GRPC_TRACER_ON(grpc_timer_check_trace)) {
       gpr_log(GPR_DEBUG, "  .. shard[%d]->min_deadline = %" PRIdPTR,
@@ -438,17 +433,14 @@ static grpc_timer_check_result run_some_expired_timers(grpc_exec_ctx *exec_ctx,
       /* For efficiency, we pop as many available timers as we can from the
          shard.  This may violate perfect timer deadline ordering, but that
          shouldn't be a big deal because we don't make ordering guarantees. */
-      if (pop_timers(exec_ctx, g_shard_queue[0], now, &new_min_deadline,
-                     error) > 0) {
-        result = GRPC_TIMERS_FIRED;
-      }
+      n +=
+          pop_timers(exec_ctx, g_shard_queue[0], now, &new_min_deadline, error);
 
       if (GRPC_TRACER_ON(grpc_timer_check_trace)) {
-        gpr_log(GPR_DEBUG,
-                "  .. result --> %d"
-                ", shard[%d]->min_deadline %" PRIdPTR " --> %" PRIdPTR
-                ", now=%" PRIdPTR,
-                result, (int)(g_shard_queue[0] - g_shards),
+        gpr_log(GPR_DEBUG, "  .. popped --> %" PRIdPTR
+                           ", shard[%d]->min_deadline %" PRIdPTR
+                           " --> %" PRIdPTR ", now=%" PRIdPTR,
+                n, (int)(g_shard_queue[0] - g_shards),
                 g_shard_queue[0]->min_deadline, new_min_deadline, now);
       }
 
@@ -469,15 +461,26 @@ static grpc_timer_check_result run_some_expired_timers(grpc_exec_ctx *exec_ctx,
                              g_shard_queue[0]->min_deadline);
     gpr_mu_unlock(&g_shared_mutables.mu);
     gpr_spinlock_unlock(&g_shared_mutables.checker_mu);
+  } else if (next != NULL) {
+    /* TODO(ctiller): this forces calling code to do an short poll, and
+       then retry the timer check (because this time through the timer list was
+       contended).
+
+       We could reduce the cost here dramatically by keeping a count of how
+       many currently active pollers got through the uncontended case above
+       successfully, and waking up other pollers IFF that count drops to zero.
+
+       Once that count is in place, this entire else branch could disappear. */
+    *next = GPR_MIN(*next, now + 1);
   }
 
   GRPC_ERROR_UNREF(error);
 
-  return result;
+  return (int)n;
 }
 
-grpc_timer_check_result grpc_timer_check(grpc_exec_ctx *exec_ctx,
-                                         gpr_timespec now, gpr_timespec *next) {
+bool grpc_timer_check(grpc_exec_ctx *exec_ctx, gpr_timespec now,
+                      gpr_timespec *next) {
   // prelude
   GPR_ASSERT(now.clock_type == g_clock_type);
   gpr_atm now_atm = timespec_to_atm_round_down(now);
@@ -495,7 +498,7 @@ grpc_timer_check_result grpc_timer_check(grpc_exec_ctx *exec_ctx,
               "TIMER CHECK SKIP: now_atm=%" PRIdPTR " min_timer=%" PRIdPTR,
               now_atm, min_timer);
     }
-    return GRPC_TIMERS_CHECKED_AND_EMPTY;
+    return 0;
   }
 
   grpc_error *shutdown_error =
@@ -520,7 +523,7 @@ grpc_timer_check_result grpc_timer_check(grpc_exec_ctx *exec_ctx,
     gpr_free(next_str);
   }
   // actual code
-  grpc_timer_check_result r;
+  bool r;
   gpr_atm next_atm;
   if (next == NULL) {
     r = run_some_expired_timers(exec_ctx, now_atm, NULL, shutdown_error);
@@ -541,7 +544,7 @@ grpc_timer_check_result grpc_timer_check(grpc_exec_ctx *exec_ctx,
     gpr_log(GPR_DEBUG, "TIMER CHECK END: r=%d; next=%s", r, next_str);
     gpr_free(next_str);
   }
-  return r;
+  return r > 0;
 }
 
 #endif /* GRPC_TIMER_USE_GENERIC */
