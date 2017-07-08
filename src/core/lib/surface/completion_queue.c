@@ -828,21 +828,30 @@ static grpc_event cq_next(grpc_completion_queue *cc, gpr_timespec deadline,
       break;
     }
 
-    /* The main polling work happens in grpc_pollset_work */
     gpr_mu_lock(cqd->mu);
-    grpc_error *err = cc->poller_vtable->work(&exec_ctx, POLLSET_FROM_CQ(cc),
-                                              NULL, now, iteration_deadline);
-    gpr_mu_unlock(cqd->mu);
-
-    if (err != GRPC_ERROR_NONE) {
-      const char *msg = grpc_error_string(err);
-      gpr_log(GPR_ERROR, "Completion queue next failed: %s", msg);
-
-      GRPC_ERROR_UNREF(err);
-      memset(&ret, 0, sizeof(ret));
-      ret.type = GRPC_QUEUE_TIMEOUT;
-      dump_pending_tags(cc);
-      break;
+    /* The main polling work happens in grpc_pollset_work */
+    /* Check alarms - these are a global resource so we just ping
+       each time through on every pollset.
+       May update deadline to ensure timely wakeups.
+       TODO(ctiller): can this work be localized? */
+    if (grpc_timer_check(&exec_ctx, now, &iteration_deadline)) {
+      GPR_TIMER_MARK("alarm_triggered", 0);
+      gpr_mu_unlock(cqd->mu);
+      grpc_exec_ctx_flush(&exec_ctx);
+      continue;
+    } else {
+      grpc_error *err = cc->poller_vtable->work(&exec_ctx, POLLSET_FROM_CQ(cc),
+                                                NULL, now, iteration_deadline);
+      gpr_mu_unlock(cqd->mu);
+      if (err != GRPC_ERROR_NONE) {
+        const char *msg = grpc_error_string(err);
+        gpr_log(GPR_ERROR, "Completion queue next failed: %s", msg);
+        GRPC_ERROR_UNREF(err);
+        memset(&ret, 0, sizeof(ret));
+        ret.type = GRPC_QUEUE_TIMEOUT;
+        dump_pending_tags(cc);
+        break;
+      }
     }
     is_finished_arg.first_loop = false;
   }
@@ -1015,19 +1024,31 @@ static grpc_event cq_pluck(grpc_completion_queue *cc, void *tag,
       break;
     }
 
-    grpc_error *err = cc->poller_vtable->work(&exec_ctx, POLLSET_FROM_CQ(cc),
-                                              &worker, now, deadline);
-    if (err != GRPC_ERROR_NONE) {
-      del_plucker(cc, tag, &worker);
+    /* Check alarms - these are a global resource so we just ping
+       each time through on every pollset.
+       May update deadline to ensure timely wakeups.
+       TODO(ctiller): can this work be localized? */
+    gpr_timespec iteration_deadline = deadline;
+    if (grpc_timer_check(&exec_ctx, now, &iteration_deadline)) {
+      GPR_TIMER_MARK("alarm_triggered", 0);
+      gpr_log(GPR_ERROR, "GOT ALARM");
       gpr_mu_unlock(cqd->mu);
-      const char *msg = grpc_error_string(err);
-      gpr_log(GPR_ERROR, "Completion queue pluck failed: %s", msg);
-
-      GRPC_ERROR_UNREF(err);
-      memset(&ret, 0, sizeof(ret));
-      ret.type = GRPC_QUEUE_TIMEOUT;
-      dump_pending_tags(cc);
-      break;
+      grpc_exec_ctx_flush(&exec_ctx);
+      gpr_mu_lock(cqd->mu);
+    } else {
+      grpc_error *err = cc->poller_vtable->work(
+          &exec_ctx, POLLSET_FROM_CQ(cc), &worker, now, iteration_deadline);
+      if (err != GRPC_ERROR_NONE) {
+        del_plucker(cc, tag, &worker);
+        gpr_mu_unlock(cqd->mu);
+        const char *msg = grpc_error_string(err);
+        gpr_log(GPR_ERROR, "Completion queue next failed: %s", msg);
+        GRPC_ERROR_UNREF(err);
+        memset(&ret, 0, sizeof(ret));
+        ret.type = GRPC_QUEUE_TIMEOUT;
+        dump_pending_tags(cc);
+        break;
+      }
     }
     is_finished_arg.first_loop = false;
     del_plucker(cc, tag, &worker);

@@ -74,11 +74,7 @@ typedef struct {
 } event_engine_factory;
 
 static const event_engine_factory g_factories[] = {
-    {"epollex", grpc_init_epollex_linux},
     {"epollsig", grpc_init_epollsig_linux},
-    {"epoll1", grpc_init_epoll1_linux},
-    {"epoll-threadpool", grpc_init_epoll_thread_pool_linux},
-    {"epoll-limited", grpc_init_epoll_limited_pollers_linux},
     {"poll", grpc_init_poll_posix},
     {"poll-cv", grpc_init_poll_cv_posix},
 };
@@ -297,5 +293,7 @@ void grpc_workqueue_unref(grpc_exec_ctx *exec_ctx, grpc_workqueue *workqueue) {
 grpc_closure_scheduler *grpc_workqueue_scheduler(grpc_workqueue *workqueue) {
   return g_event_engine->workqueue_scheduler(workqueue);
 }
+
+grpc_error *grpc_kick_poller(void) { return g_event_engine->kick_poller(); }
 
 #endif  // GRPC_POSIX_SOCKET
