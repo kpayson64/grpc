@@ -1,4 +1,6 @@
-# Copyright 2017, Google Inc.
+#!/usr/bin/env ruby
+
+# Copyright 2016, Google Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,37 +29,35 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-licenses(["notice"])  # 3-clause BSD
+require_relative './end2end_common'
 
-package(default_visibility = ["//visibility:public"])
+Thread.abort_on_exception = true
 
-load("//:bazel/grpc_build_system.bzl", "grpc_proto_library")
+include GRPC::Core::ConnectivityStates
 
-grpc_proto_library(
-    name = "monitoring_proto",
-    srcs = [
-        "monitoring.proto",
-    ],
-    well_known_protos = "@com_google_protobuf//:well_known_protos",
-    deps = [
-        ":census_proto",
-    ],
-)
+def watch_state(ch)
+  thd = Thread.new do
+    state = ch.connectivity_state(false)
+    fail "non-idle state: #{state}" unless state == IDLE
+    ch.watch_connectivity_state(IDLE, Time.now + 360)
+  end
+  sleep 0.1
+  thd.kill
+end
 
-grpc_proto_library(
-    name = "census_proto",
-    srcs = [
-        "census.proto",
-    ],
-    well_known_protos = "@com_google_protobuf//:well_known_protos",
-)
+def main
+  channels = []
+  10.times do
+    ch = GRPC::Core::Channel.new('dummy_host',
+                                 nil, :this_channel_is_insecure)
+    watch_state(ch)
+    channels << ch
+  end
 
-cc_binary(
-    name = "grpcz_client",
-    srcs = ["grpcz_client.cc"],
-    deps = [
-        "monitoring_proto",
-        "//external:gflags",
-        "@mongoose_repo//:mongoose_lib",
-    ],
-)
+  # checking state should still be safe to call
+  channels.each do |c|
+    fail unless c.connectivity_state(false) == FATAL_FAILURE
+  end
+end
+
+main
