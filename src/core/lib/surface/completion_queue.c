@@ -770,6 +770,8 @@ static grpc_event cq_next(grpc_completion_queue *cc, gpr_timespec deadline,
 
   GRPC_CQ_INTERNAL_REF(cc, "next");
 
+  gpr_mu_lock(cqd->mu);
+
   cq_is_finished_arg is_finished_arg = {
       .last_seen_things_queued_ever =
           gpr_atm_no_barrier_load(&cqd->things_queued_ever),
@@ -785,6 +787,7 @@ static grpc_event cq_next(grpc_completion_queue *cc, gpr_timespec deadline,
     gpr_timespec iteration_deadline = deadline;
 
     if (is_finished_arg.stolen_completion != NULL) {
+      gpr_mu_unlock(cqd->mu);
       grpc_cq_completion *c = is_finished_arg.stolen_completion;
       is_finished_arg.stolen_completion = NULL;
       ret.type = GRPC_OP_COMPLETE;
@@ -797,6 +800,7 @@ static grpc_event cq_next(grpc_completion_queue *cc, gpr_timespec deadline,
     grpc_cq_completion *c = cq_event_queue_pop(&cqd->queue);
 
     if (c != NULL) {
+      gpr_mu_unlock(cqd->mu);
       ret.type = GRPC_OP_COMPLETE;
       ret.success = c->next & 1u;
       ret.tag = c->tag;
@@ -824,7 +828,7 @@ static grpc_event cq_next(grpc_completion_queue *cc, gpr_timespec deadline,
            events are already queued on this cq */
         continue;
       }
-
+      gpr_mu_unlock(cqd->mu);
       memset(&ret, 0, sizeof(ret));
       ret.type = GRPC_QUEUE_SHUTDOWN;
       break;
@@ -832,13 +836,13 @@ static grpc_event cq_next(grpc_completion_queue *cc, gpr_timespec deadline,
 
     now = gpr_now(GPR_CLOCK_MONOTONIC);
     if (!is_finished_arg.first_loop && gpr_time_cmp(now, deadline) >= 0) {
+      gpr_mu_unlock(cqd->mu);
       memset(&ret, 0, sizeof(ret));
       ret.type = GRPC_QUEUE_TIMEOUT;
       dump_pending_tags(cc);
       break;
     }
 
-    gpr_mu_lock(cqd->mu);
     /* The main polling work happens in grpc_pollset_work */
     /* Check alarms - these are a global resource so we just ping
        each time through on every pollset.
@@ -848,13 +852,14 @@ static grpc_event cq_next(grpc_completion_queue *cc, gpr_timespec deadline,
       GPR_TIMER_MARK("alarm_triggered", 0);
       gpr_mu_unlock(cqd->mu);
       grpc_exec_ctx_flush(&exec_ctx);
+      gpr_mu_lock(cqd->mu);
       continue;
     } else {
       cqd->num_polls++;
       grpc_error *err = cc->poller_vtable->work(&exec_ctx, POLLSET_FROM_CQ(cc),
                                                 NULL, now, iteration_deadline);
-      gpr_mu_unlock(cqd->mu);
       if (err != GRPC_ERROR_NONE) {
+        gpr_mu_unlock(cqd->mu);
         const char *msg = grpc_error_string(err);
         gpr_log(GPR_ERROR, "Completion queue next failed: %s", msg);
         GRPC_ERROR_UNREF(err);
@@ -1042,7 +1047,6 @@ static grpc_event cq_pluck(grpc_completion_queue *cc, void *tag,
     gpr_timespec iteration_deadline = deadline;
     if (grpc_timer_check(&exec_ctx, now, &iteration_deadline)) {
       GPR_TIMER_MARK("alarm_triggered", 0);
-      gpr_log(GPR_ERROR, "GOT ALARM");
       gpr_mu_unlock(cqd->mu);
       grpc_exec_ctx_flush(&exec_ctx);
       gpr_mu_lock(cqd->mu);
