@@ -849,7 +849,6 @@ static grpc_event cq_next(grpc_completion_queue *cc, gpr_timespec deadline,
                                                 NULL, now, iteration_deadline);
       gpr_mu_unlock(cqd->mu);
       if (err != GRPC_ERROR_NONE) {
-        gpr_mu_unlock(cqd->mu);
         const char *msg = grpc_error_string(err);
         gpr_log(GPR_ERROR, "Completion queue next failed: %s", msg);
         GRPC_ERROR_UNREF(err);
