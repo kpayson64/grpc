@@ -51,9 +51,9 @@ load(
 # This should be updated along with build.yaml
 g_stands_for = "gregarious"
 
-core_version = "3.0.0-dev"
+core_version = "4.0.0-dev"
 
-version = "1.4.0-dev"
+version = "1.5.0-dev"
 
 grpc_cc_library(
     name = "gpr",
@@ -282,6 +282,7 @@ grpc_cc_library(
         "src/core/ext/census/grpc_filter.c",
         "src/core/ext/census/grpc_plugin.c",
         "src/core/ext/census/initialize.c",
+        "src/core/ext/census/intrusive_hash_map.c",
         "src/core/ext/census/mlog.c",
         "src/core/ext/census/operation.c",
         "src/core/ext/census/placeholders.c",
@@ -297,6 +298,8 @@ grpc_cc_library(
         "src/core/ext/census/gen/census.pb.h",
         "src/core/ext/census/gen/trace_context.pb.h",
         "src/core/ext/census/grpc_filter.h",
+        "src/core/ext/census/intrusive_hash_map.h",
+        "src/core/ext/census/intrusive_hash_map_internal.h",
         "src/core/ext/census/mlog.h",
         "src/core/ext/census/resource.h",
         "src/core/ext/census/rpc_metric_id.h",
@@ -478,6 +481,7 @@ grpc_cc_library(
         "src/core/lib/iomgr/ev_epollsig_linux.c",
         "src/core/lib/iomgr/ev_poll_posix.c",
         "src/core/lib/iomgr/ev_posix.c",
+        "src/core/lib/iomgr/ev_windows.c",
         "src/core/lib/iomgr/exec_ctx.c",
         "src/core/lib/iomgr/executor.c",
         "src/core/lib/iomgr/iocp_windows.c",
@@ -744,7 +748,7 @@ grpc_cc_library(
         "grpc_transport_chttp2_server_insecure",
         "grpc_workaround_cronet_compression_filter",
         "grpc_server_backward_compatibility",
-    ]
+    ],
 )
 
 grpc_cc_library(
@@ -1399,22 +1403,22 @@ GRPCXX_PUBLIC_HDRS = [
 
 grpc_cc_library(
     name = "grpc++_base",
-    hdrs = GRPCXX_HDRS,
     srcs = GRPCXX_SRCS,
-    public_hdrs = GRPCXX_PUBLIC_HDRS,
+    hdrs = GRPCXX_HDRS,
     language = "c++",
+    public_hdrs = GRPCXX_PUBLIC_HDRS,
     deps = [
-        "grpc++_codegen_base",
         "grpc",
+        "grpc++_codegen_base",
     ],
 )
 
 grpc_cc_library(
     name = "grpc++_base_unsecure",
-    hdrs = GRPCXX_HDRS,
     srcs = GRPCXX_SRCS,
-    public_hdrs = GRPCXX_PUBLIC_HDRS,
+    hdrs = GRPCXX_HDRS,
     language = "c++",
+    public_hdrs = GRPCXX_PUBLIC_HDRS,
     deps = [
         "grpc++_codegen_base",
         "grpc_unsecure",
@@ -1537,6 +1541,5 @@ grpc_cc_library(
         "grpc_base",
     ],
 )
-
 
 grpc_generate_one_off_targets()

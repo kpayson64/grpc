@@ -794,6 +794,7 @@ doc/statuscodes.md \
 doc/stress_test_framework.md \
 doc/unit_testing.md \
 doc/wait-for-ready.md \
+doc/workarounds.md \
 include/grpc/byte_buffer.h \
 include/grpc/byte_buffer_reader.h \
 include/grpc/census.h \
@@ -882,6 +883,9 @@ src/core/ext/census/grpc_filter.c \
 src/core/ext/census/grpc_filter.h \
 src/core/ext/census/grpc_plugin.c \
 src/core/ext/census/initialize.c \
+src/core/ext/census/intrusive_hash_map.c \
+src/core/ext/census/intrusive_hash_map.h \
+src/core/ext/census/intrusive_hash_map_internal.h \
 src/core/ext/census/mlog.c \
 src/core/ext/census/mlog.h \
 src/core/ext/census/operation.c \
@@ -1098,6 +1102,7 @@ src/core/lib/iomgr/ev_poll_posix.c \
 src/core/lib/iomgr/ev_poll_posix.h \
 src/core/lib/iomgr/ev_posix.c \
 src/core/lib/iomgr/ev_posix.h \
+src/core/lib/iomgr/ev_windows.c \
 src/core/lib/iomgr/exec_ctx.c \
 src/core/lib/iomgr/exec_ctx.h \
 src/core/lib/iomgr/executor.c \
