@@ -27,7 +27,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-FROM alpine:3.3
+FROM alpine:3.5
 
 # Install Git and basic packages.
 RUN apk update && apk add \
@@ -54,6 +54,9 @@ RUN apk update && apk add \
 RUN pip install pip --upgrade
 RUN pip install virtualenv
 RUN pip install futures==2.2.0 enum34==1.0.4 protobuf==3.2.0 six==1.10.0
+
+# Google Cloud platform API libraries
+RUN pip install --upgrade google-api-python-client
 
 # Prepare ccache
 RUN ln -s /usr/bin/ccache /usr/local/bin/gcc

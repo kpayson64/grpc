@@ -37,7 +37,7 @@
 
 Pod::Spec.new do |s|
   s.name     = 'gRPC-Core'
-  version = '1.4.0-dev'
+  version = '1.5.0-dev'
   s.version  = version
   s.summary  = 'Core cross-platform gRPC library, written in C'
   s.homepage = 'http://www.grpc.io'
@@ -166,6 +166,7 @@ Pod::Spec.new do |s|
                       'include/grpc/slice.h',
                       'include/grpc/slice_buffer.h',
                       'include/grpc/status.h',
+                      'include/grpc/support/workaround_list.h',
                       'include/grpc/impl/codegen/byte_buffer_reader.h',
                       'include/grpc/impl/codegen/compression_types.h',
                       'include/grpc/impl/codegen/connectivity_state.h',
@@ -462,6 +463,8 @@ Pod::Spec.new do |s|
                       'src/core/ext/census/gen/census.pb.h',
                       'src/core/ext/census/gen/trace_context.pb.h',
                       'src/core/ext/census/grpc_filter.h',
+                      'src/core/ext/census/intrusive_hash_map.h',
+                      'src/core/ext/census/intrusive_hash_map_internal.h',
                       'src/core/ext/census/mlog.h',
                       'src/core/ext/census/resource.h',
                       'src/core/ext/census/rpc_metric_id.h',
@@ -473,6 +476,8 @@ Pod::Spec.new do |s|
                       'src/core/ext/census/tracing.h',
                       'src/core/ext/filters/max_age/max_age_filter.h',
                       'src/core/ext/filters/message_size/message_size_filter.h',
+                      'src/core/ext/filters/workarounds/workaround_cronet_compression_filter.h',
+                      'src/core/ext/filters/workarounds/workaround_utils.h',
                       'src/core/lib/surface/init.c',
                       'src/core/lib/channel/channel_args.c',
                       'src/core/lib/channel/channel_stack.c',
@@ -500,6 +505,7 @@ Pod::Spec.new do |s|
                       'src/core/lib/iomgr/ev_epollsig_linux.c',
                       'src/core/lib/iomgr/ev_poll_posix.c',
                       'src/core/lib/iomgr/ev_posix.c',
+                      'src/core/lib/iomgr/ev_windows.c',
                       'src/core/lib/iomgr/exec_ctx.c',
                       'src/core/lib/iomgr/executor.c',
                       'src/core/lib/iomgr/iocp_windows.c',
@@ -709,6 +715,7 @@ Pod::Spec.new do |s|
                       'src/core/ext/census/grpc_filter.c',
                       'src/core/ext/census/grpc_plugin.c',
                       'src/core/ext/census/initialize.c',
+                      'src/core/ext/census/intrusive_hash_map.c',
                       'src/core/ext/census/mlog.c',
                       'src/core/ext/census/operation.c',
                       'src/core/ext/census/placeholders.c',
@@ -717,6 +724,8 @@ Pod::Spec.new do |s|
                       'src/core/ext/census/tracing.c',
                       'src/core/ext/filters/max_age/max_age_filter.c',
                       'src/core/ext/filters/message_size/message_size_filter.c',
+                      'src/core/ext/filters/workarounds/workaround_cronet_compression_filter.c',
+                      'src/core/ext/filters/workarounds/workaround_utils.c',
                       'src/core/plugin_registry/grpc_plugin_registry.c'
 
     ss.private_header_files = 'src/core/lib/profiling/timers.h',
@@ -940,6 +949,8 @@ Pod::Spec.new do |s|
                               'src/core/ext/census/gen/census.pb.h',
                               'src/core/ext/census/gen/trace_context.pb.h',
                               'src/core/ext/census/grpc_filter.h',
+                              'src/core/ext/census/intrusive_hash_map.h',
+                              'src/core/ext/census/intrusive_hash_map_internal.h',
                               'src/core/ext/census/mlog.h',
                               'src/core/ext/census/resource.h',
                               'src/core/ext/census/rpc_metric_id.h',
@@ -950,7 +961,9 @@ Pod::Spec.new do |s|
                               'src/core/ext/census/trace_string.h',
                               'src/core/ext/census/tracing.h',
                               'src/core/ext/filters/max_age/max_age_filter.h',
-                              'src/core/ext/filters/message_size/message_size_filter.h'
+                              'src/core/ext/filters/message_size/message_size_filter.h',
+                              'src/core/ext/filters/workarounds/workaround_cronet_compression_filter.h',
+                              'src/core/ext/filters/workarounds/workaround_utils.h'
   end
 
   s.subspec 'Cronet-Interface' do |ss|

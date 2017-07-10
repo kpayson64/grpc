@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2017, Google Inc.
 # All rights reserved.
 #
@@ -27,37 +28,15 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-licenses(["notice"])  # 3-clause BSD
+set -ex
 
-package(default_visibility = ["//visibility:public"])
+# change to grpc repo root
+cd $(dirname $0)/../../..
 
-load("//:bazel/grpc_build_system.bzl", "grpc_proto_library")
+source tools/internal_ci/helper_scripts/prepare_build_linux_rc
 
-grpc_proto_library(
-    name = "monitoring_proto",
-    srcs = [
-        "monitoring.proto",
-    ],
-    well_known_protos = "@com_google_protobuf//:well_known_protos",
-    deps = [
-        ":census_proto",
-    ],
-)
+# TODO(jtattermusch): install ruby on the internal_ci worker
+gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+curl -sSL https://get.rvm.io | bash -s stable --ruby
 
-grpc_proto_library(
-    name = "census_proto",
-    srcs = [
-        "census.proto",
-    ],
-    well_known_protos = "@com_google_protobuf//:well_known_protos",
-)
-
-cc_binary(
-    name = "grpcz_client",
-    srcs = ["grpcz_client.cc"],
-    deps = [
-        "monitoring_proto",
-        "//external:gflags",
-        "@mongoose_repo//:mongoose_lib",
-    ],
-)
+tools/run_tests/task_runner.py -f artifact linux
