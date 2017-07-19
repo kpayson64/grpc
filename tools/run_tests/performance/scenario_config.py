@@ -209,7 +209,7 @@ class CXXLanguage:
     self.safename = 'cxx'
 
   def worker_cmdline(self):
-    return ['bins/opt/qps_worker']
+    return ['/google/src/cloud/kpayson/investigate_large_messages/google3/blaze-bin/third_party/grpc/test/cpp/qps/qps_worker_alternative']
 
   def worker_port_offset(self):
     return 0
