@@ -28,6 +28,28 @@
 
 typedef struct grpc_pollset_set grpc_pollset_set;
 
+typedef struct grpc_pollset_set_vtable {
+  grpc_pollset_set *(*create)(void);
+  void (*destroy)(grpc_exec_ctx *exec_ctx, grpc_pollset_set *pollset_set);
+  void (*add_pollset)(grpc_exec_ctx *exec_ctx,
+                      grpc_pollset_set *pollset_set,
+                      grpc_pollset *pollset);
+  void (*del_pollset)(grpc_exec_ctx *exec_ctx,
+                      grpc_pollset_set *pollset_set,
+                      grpc_pollset *pollset);
+  void (*add_pollset_set)(grpc_exec_ctx *exec_ctx,
+                       grpc_pollset_set *bag,
+                       grpc_pollset_set *item);
+  void (*del_pollset_set)(grpc_exec_ctx *exec_ctx,
+                       grpc_pollset_set *bag,
+                       grpc_pollset_set *item);
+} grpc_pollset_set_vtable;
+
+void grpc_set_pollset_set_vtable(grpc_pollset_set_vtable* vtable);
+grpc_pollset_set_vtable* grpc_default_pollset_set_vtable();
+
+void grpc_pollset_set_global_init();
+
 grpc_pollset_set *grpc_pollset_set_create(void);
 void grpc_pollset_set_destroy(grpc_exec_ctx *exec_ctx,
                               grpc_pollset_set *pollset_set);

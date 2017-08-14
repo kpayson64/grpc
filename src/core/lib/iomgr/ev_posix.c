@@ -195,26 +195,29 @@ void grpc_fd_notify_on_write(grpc_exec_ctx *exec_ctx, grpc_fd *fd,
 
 size_t grpc_pollset_size(void) { return g_event_engine->pollset_size; }
 
-void grpc_pollset_init(grpc_pollset *pollset, gpr_mu **mu) {
+void pollset_global_init(void){}
+void pollset_global_shutdown(void){}
+
+static void pollset_init(grpc_pollset *pollset, gpr_mu **mu) {
   g_event_engine->pollset_init(pollset, mu);
 }
 
-void grpc_pollset_shutdown(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
+static void pollset_shutdown(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
                            grpc_closure *closure) {
   g_event_engine->pollset_shutdown(exec_ctx, pollset, closure);
 }
 
-void grpc_pollset_destroy(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset) {
+static void pollset_destroy(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset) {
   g_event_engine->pollset_destroy(exec_ctx, pollset);
 }
 
-grpc_error *grpc_pollset_work(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
+static grpc_error *pollset_work(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
                               grpc_pollset_worker **worker, gpr_timespec now,
                               gpr_timespec deadline) {
   return g_event_engine->pollset_work(exec_ctx, pollset, worker, now, deadline);
 }
 
-grpc_error *grpc_pollset_kick(grpc_pollset *pollset,
+static grpc_error *pollset_kick(grpc_pollset *pollset,
                               grpc_pollset_worker *specific_worker) {
   return g_event_engine->pollset_kick(pollset, specific_worker);
 }
@@ -224,37 +227,54 @@ void grpc_pollset_add_fd(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
   g_event_engine->pollset_add_fd(exec_ctx, pollset, fd);
 }
 
-grpc_pollset_set *grpc_pollset_set_create(void) {
+static grpc_pollset_vtable pollset_vtable = {
+  pollset_global_init, pollset_global_shutdown, pollset_init,
+  pollset_shutdown, pollset_destroy, pollset_work, pollset_kick};
+
+grpc_pollset_vtable* grpc_default_pollset_vtable() {
+  return &pollset_vtable;
+}
+
+static grpc_pollset_set *pollset_set_create(void) {
   return g_event_engine->pollset_set_create();
 }
 
-void grpc_pollset_set_destroy(grpc_exec_ctx *exec_ctx,
+static void pollset_set_destroy(grpc_exec_ctx *exec_ctx,
                               grpc_pollset_set *pollset_set) {
   g_event_engine->pollset_set_destroy(exec_ctx, pollset_set);
 }
 
-void grpc_pollset_set_add_pollset(grpc_exec_ctx *exec_ctx,
+static void pollset_set_add_pollset(grpc_exec_ctx *exec_ctx,
                                   grpc_pollset_set *pollset_set,
                                   grpc_pollset *pollset) {
   g_event_engine->pollset_set_add_pollset(exec_ctx, pollset_set, pollset);
 }
 
-void grpc_pollset_set_del_pollset(grpc_exec_ctx *exec_ctx,
+static void pollset_set_del_pollset(grpc_exec_ctx *exec_ctx,
                                   grpc_pollset_set *pollset_set,
                                   grpc_pollset *pollset) {
   g_event_engine->pollset_set_del_pollset(exec_ctx, pollset_set, pollset);
 }
 
-void grpc_pollset_set_add_pollset_set(grpc_exec_ctx *exec_ctx,
+static void pollset_set_add_pollset_set(grpc_exec_ctx *exec_ctx,
                                       grpc_pollset_set *bag,
                                       grpc_pollset_set *item) {
   g_event_engine->pollset_set_add_pollset_set(exec_ctx, bag, item);
 }
 
-void grpc_pollset_set_del_pollset_set(grpc_exec_ctx *exec_ctx,
+static void pollset_set_del_pollset_set(grpc_exec_ctx *exec_ctx,
                                       grpc_pollset_set *bag,
                                       grpc_pollset_set *item) {
   g_event_engine->pollset_set_del_pollset_set(exec_ctx, bag, item);
+}
+
+static grpc_pollset_set_vtable pollset_set_vtable = {
+  pollset_set_create, pollset_set_destroy, pollset_set_add_pollset,
+  pollset_set_del_pollset, pollset_set_add_pollset_set,
+  pollset_set_del_pollset_set};
+
+grpc_pollset_set_vtable* grpc_default_pollset_set_vtable() {
+  return &pollset_set_vtable;
 }
 
 void grpc_pollset_set_add_fd(grpc_exec_ctx *exec_ctx,
@@ -266,5 +286,6 @@ void grpc_pollset_set_del_fd(grpc_exec_ctx *exec_ctx,
                              grpc_pollset_set *pollset_set, grpc_fd *fd) {
   g_event_engine->pollset_set_del_fd(exec_ctx, pollset_set, fd);
 }
+
 
 #endif  // GRPC_POSIX_SOCKET

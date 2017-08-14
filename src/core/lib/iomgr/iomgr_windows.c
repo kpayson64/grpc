@@ -44,18 +44,25 @@ static void winsock_shutdown(void) {
   GPR_ASSERT(status == 0);
 }
 
-void grpc_iomgr_platform_init(void) {
+static void iomgr_platform_init(void) {
   winsock_init();
   grpc_iocp_init();
   grpc_pollset_global_init();
 }
 
-void grpc_iomgr_platform_flush(void) { grpc_iocp_flush(); }
+static void iomgr_platform_flush(void) { grpc_iocp_flush(); }
 
-void grpc_iomgr_platform_shutdown(void) {
+static void iomgr_platform_shutdown(void) {
   grpc_pollset_global_shutdown();
   grpc_iocp_shutdown();
   winsock_shutdown();
+}
+
+static grpc_iomgr_platform_vtable vtable = {
+    iomgr_platform_init, iomgr_platform_flush, iomgr_platform_shutdown};
+
+grpc_iomgr_platform_vtable* grpc_default_iomgr_platform_vtable() {
+  return &vtable;
 }
 
 #endif /* GRPC_WINSOCK_SOCKET */

@@ -157,10 +157,13 @@
     <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\iomgr.c">
       <Filter>src\core\lib\iomgr</Filter>
     </ClCompile>
-    <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\iomgr_posix.c">
+    <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\iomgr_custom.c">
       <Filter>src\core\lib\iomgr</Filter>
     </ClCompile>
-    <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\iomgr_uv.c">
+    <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\iomgr_internal.c">
+      <Filter>src\core\lib\iomgr</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\iomgr_posix.c">
       <Filter>src\core\lib\iomgr</Filter>
     </ClCompile>
     <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\iomgr_windows.c">
@@ -181,13 +184,19 @@
     <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\polling_entity.c">
       <Filter>src\core\lib\iomgr</Filter>
     </ClCompile>
-    <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\pollset_set_uv.c">
+    <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\pollset.c">
+      <Filter>src\core\lib\iomgr</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\pollset_custom.c">
+      <Filter>src\core\lib\iomgr</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\pollset_set.c">
+      <Filter>src\core\lib\iomgr</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\pollset_set_custom.c">
       <Filter>src\core\lib\iomgr</Filter>
     </ClCompile>
     <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\pollset_set_windows.c">
-      <Filter>src\core\lib\iomgr</Filter>
-    </ClCompile>
-    <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\pollset_uv.c">
       <Filter>src\core\lib\iomgr</Filter>
     </ClCompile>
     <ClCompile Include="$(SolutionDir)\..\src\core\lib\iomgr\pollset_windows.c">

@@ -59,18 +59,18 @@ uv_timer_t *dummy_uv_handle;
 
 size_t grpc_pollset_size() { return sizeof(grpc_pollset); }
 
-void dummy_timer_cb(uv_timer_t *handle) {}
+static void dummy_timer_cb(uv_timer_t *handle) {}
 
-void dummy_handle_close_cb(uv_handle_t *handle) { gpr_free(handle); }
+static void dummy_handle_close_cb(uv_handle_t *handle) { gpr_free(handle); }
 
-void grpc_pollset_global_init(void) {
+static void pollset_global_init(void) {
   gpr_mu_init(&grpc_polling_mu);
   dummy_uv_handle = gpr_malloc(sizeof(uv_timer_t));
   uv_timer_init(uv_default_loop(), dummy_uv_handle);
   grpc_pollset_work_run_loop = 1;
 }
 
-void grpc_pollset_global_shutdown(void) {
+static void pollset_global_shutdown(void) {
   GRPC_UV_ASSERT_SAME_THREAD();
   gpr_mu_destroy(&grpc_polling_mu);
   uv_close((uv_handle_t *)dummy_uv_handle, dummy_handle_close_cb);
@@ -80,14 +80,14 @@ static void timer_run_cb(uv_timer_t *timer) {}
 
 static void timer_close_cb(uv_handle_t *handle) { handle->data = (void *)1; }
 
-void grpc_pollset_init(grpc_pollset *pollset, gpr_mu **mu) {
+static void pollset_init(grpc_pollset *pollset, gpr_mu **mu) {
   GRPC_UV_ASSERT_SAME_THREAD();
   *mu = &grpc_polling_mu;
   uv_timer_init(uv_default_loop(), &pollset->timer);
   pollset->shutting_down = 0;
 }
 
-void grpc_pollset_shutdown(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
+static void pollset_shutdown(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
                            grpc_closure *closure) {
   GPR_ASSERT(!pollset->shutting_down);
   GRPC_UV_ASSERT_SAME_THREAD();
@@ -102,7 +102,7 @@ void grpc_pollset_shutdown(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
   GRPC_CLOSURE_SCHED(exec_ctx, closure, GRPC_ERROR_NONE);
 }
 
-void grpc_pollset_destroy(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset) {
+static void pollset_destroy(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset) {
   GRPC_UV_ASSERT_SAME_THREAD();
   uv_close((uv_handle_t *)&pollset->timer, timer_close_cb);
   // timer.data is a boolean indicating that the timer has finished closing
@@ -114,7 +114,7 @@ void grpc_pollset_destroy(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset) {
   }
 }
 
-grpc_error *grpc_pollset_work(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
+static grpc_error *pollset_work(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
                               grpc_pollset_worker **worker_hdl,
                               gpr_timespec now, gpr_timespec deadline) {
   uint64_t timeout;
@@ -145,11 +145,15 @@ grpc_error *grpc_pollset_work(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
   return GRPC_ERROR_NONE;
 }
 
-grpc_error *grpc_pollset_kick(grpc_pollset *pollset,
+static grpc_error *pollset_kick(grpc_pollset *pollset,
                               grpc_pollset_worker *specific_worker) {
   GRPC_UV_ASSERT_SAME_THREAD();
   uv_timer_start(dummy_uv_handle, dummy_timer_cb, 0, 0);
   return GRPC_ERROR_NONE;
 }
+
+grpc_pollset_vtable uv_pollset_vtable = {
+  pollset_global_init, pollset_global_shutdown, pollset_init,
+  pollset_shutdown, pollset_destroy, pollset_work, pollset_kick};
 
 #endif /* GRPC_UV */

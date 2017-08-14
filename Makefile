@@ -2927,17 +2927,20 @@ LIBGRPC_SRC = \
     src/core/lib/iomgr/executor.c \
     src/core/lib/iomgr/iocp_windows.c \
     src/core/lib/iomgr/iomgr.c \
+    src/core/lib/iomgr/iomgr_custom.c \
+    src/core/lib/iomgr/iomgr_internal.c \
     src/core/lib/iomgr/iomgr_posix.c \
-    src/core/lib/iomgr/iomgr_uv.c \
     src/core/lib/iomgr/iomgr_windows.c \
     src/core/lib/iomgr/is_epollexclusive_available.c \
     src/core/lib/iomgr/load_file.c \
     src/core/lib/iomgr/lockfree_event.c \
     src/core/lib/iomgr/network_status_tracker.c \
     src/core/lib/iomgr/polling_entity.c \
-    src/core/lib/iomgr/pollset_set_uv.c \
+    src/core/lib/iomgr/pollset.c \
+    src/core/lib/iomgr/pollset_custom.c \
+    src/core/lib/iomgr/pollset_set.c \
+    src/core/lib/iomgr/pollset_set_custom.c \
     src/core/lib/iomgr/pollset_set_windows.c \
-    src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
     src/core/lib/iomgr/resolve_address_posix.c \
     src/core/lib/iomgr/resolve_address_uv.c \
@@ -3269,17 +3272,20 @@ LIBGRPC_CRONET_SRC = \
     src/core/lib/iomgr/executor.c \
     src/core/lib/iomgr/iocp_windows.c \
     src/core/lib/iomgr/iomgr.c \
+    src/core/lib/iomgr/iomgr_custom.c \
+    src/core/lib/iomgr/iomgr_internal.c \
     src/core/lib/iomgr/iomgr_posix.c \
-    src/core/lib/iomgr/iomgr_uv.c \
     src/core/lib/iomgr/iomgr_windows.c \
     src/core/lib/iomgr/is_epollexclusive_available.c \
     src/core/lib/iomgr/load_file.c \
     src/core/lib/iomgr/lockfree_event.c \
     src/core/lib/iomgr/network_status_tracker.c \
     src/core/lib/iomgr/polling_entity.c \
-    src/core/lib/iomgr/pollset_set_uv.c \
+    src/core/lib/iomgr/pollset.c \
+    src/core/lib/iomgr/pollset_custom.c \
+    src/core/lib/iomgr/pollset_set.c \
+    src/core/lib/iomgr/pollset_set_custom.c \
     src/core/lib/iomgr/pollset_set_windows.c \
-    src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
     src/core/lib/iomgr/resolve_address_posix.c \
     src/core/lib/iomgr/resolve_address_uv.c \
@@ -3578,17 +3584,20 @@ LIBGRPC_TEST_UTIL_SRC = \
     src/core/lib/iomgr/executor.c \
     src/core/lib/iomgr/iocp_windows.c \
     src/core/lib/iomgr/iomgr.c \
+    src/core/lib/iomgr/iomgr_custom.c \
+    src/core/lib/iomgr/iomgr_internal.c \
     src/core/lib/iomgr/iomgr_posix.c \
-    src/core/lib/iomgr/iomgr_uv.c \
     src/core/lib/iomgr/iomgr_windows.c \
     src/core/lib/iomgr/is_epollexclusive_available.c \
     src/core/lib/iomgr/load_file.c \
     src/core/lib/iomgr/lockfree_event.c \
     src/core/lib/iomgr/network_status_tracker.c \
     src/core/lib/iomgr/polling_entity.c \
-    src/core/lib/iomgr/pollset_set_uv.c \
+    src/core/lib/iomgr/pollset.c \
+    src/core/lib/iomgr/pollset_custom.c \
+    src/core/lib/iomgr/pollset_set.c \
+    src/core/lib/iomgr/pollset_set_custom.c \
     src/core/lib/iomgr/pollset_set_windows.c \
-    src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
     src/core/lib/iomgr/resolve_address_posix.c \
     src/core/lib/iomgr/resolve_address_uv.c \
@@ -3824,17 +3833,20 @@ LIBGRPC_TEST_UTIL_UNSECURE_SRC = \
     src/core/lib/iomgr/executor.c \
     src/core/lib/iomgr/iocp_windows.c \
     src/core/lib/iomgr/iomgr.c \
+    src/core/lib/iomgr/iomgr_custom.c \
+    src/core/lib/iomgr/iomgr_internal.c \
     src/core/lib/iomgr/iomgr_posix.c \
-    src/core/lib/iomgr/iomgr_uv.c \
     src/core/lib/iomgr/iomgr_windows.c \
     src/core/lib/iomgr/is_epollexclusive_available.c \
     src/core/lib/iomgr/load_file.c \
     src/core/lib/iomgr/lockfree_event.c \
     src/core/lib/iomgr/network_status_tracker.c \
     src/core/lib/iomgr/polling_entity.c \
-    src/core/lib/iomgr/pollset_set_uv.c \
+    src/core/lib/iomgr/pollset.c \
+    src/core/lib/iomgr/pollset_custom.c \
+    src/core/lib/iomgr/pollset_set.c \
+    src/core/lib/iomgr/pollset_set_custom.c \
     src/core/lib/iomgr/pollset_set_windows.c \
-    src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
     src/core/lib/iomgr/resolve_address_posix.c \
     src/core/lib/iomgr/resolve_address_uv.c \
@@ -4043,17 +4055,20 @@ LIBGRPC_UNSECURE_SRC = \
     src/core/lib/iomgr/executor.c \
     src/core/lib/iomgr/iocp_windows.c \
     src/core/lib/iomgr/iomgr.c \
+    src/core/lib/iomgr/iomgr_custom.c \
+    src/core/lib/iomgr/iomgr_internal.c \
     src/core/lib/iomgr/iomgr_posix.c \
-    src/core/lib/iomgr/iomgr_uv.c \
     src/core/lib/iomgr/iomgr_windows.c \
     src/core/lib/iomgr/is_epollexclusive_available.c \
     src/core/lib/iomgr/load_file.c \
     src/core/lib/iomgr/lockfree_event.c \
     src/core/lib/iomgr/network_status_tracker.c \
     src/core/lib/iomgr/polling_entity.c \
-    src/core/lib/iomgr/pollset_set_uv.c \
+    src/core/lib/iomgr/pollset.c \
+    src/core/lib/iomgr/pollset_custom.c \
+    src/core/lib/iomgr/pollset_set.c \
+    src/core/lib/iomgr/pollset_set_custom.c \
     src/core/lib/iomgr/pollset_set_windows.c \
-    src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
     src/core/lib/iomgr/resolve_address_posix.c \
     src/core/lib/iomgr/resolve_address_uv.c \
@@ -4719,17 +4734,20 @@ LIBGRPC++_CRONET_SRC = \
     src/core/lib/iomgr/executor.c \
     src/core/lib/iomgr/iocp_windows.c \
     src/core/lib/iomgr/iomgr.c \
+    src/core/lib/iomgr/iomgr_custom.c \
+    src/core/lib/iomgr/iomgr_internal.c \
     src/core/lib/iomgr/iomgr_posix.c \
-    src/core/lib/iomgr/iomgr_uv.c \
     src/core/lib/iomgr/iomgr_windows.c \
     src/core/lib/iomgr/is_epollexclusive_available.c \
     src/core/lib/iomgr/load_file.c \
     src/core/lib/iomgr/lockfree_event.c \
     src/core/lib/iomgr/network_status_tracker.c \
     src/core/lib/iomgr/polling_entity.c \
-    src/core/lib/iomgr/pollset_set_uv.c \
+    src/core/lib/iomgr/pollset.c \
+    src/core/lib/iomgr/pollset_custom.c \
+    src/core/lib/iomgr/pollset_set.c \
+    src/core/lib/iomgr/pollset_set_custom.c \
     src/core/lib/iomgr/pollset_set_windows.c \
-    src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
     src/core/lib/iomgr/resolve_address_posix.c \
     src/core/lib/iomgr/resolve_address_uv.c \

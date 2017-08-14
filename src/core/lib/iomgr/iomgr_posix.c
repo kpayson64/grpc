@@ -22,20 +22,28 @@
 
 #include "src/core/lib/debug/trace.h"
 #include "src/core/lib/iomgr/ev_posix.h"
+#include "src/core/lib/iomgr/iomgr_internal.h"
 #include "src/core/lib/iomgr/iomgr_posix.h"
 #include "src/core/lib/iomgr/tcp_posix.h"
 
-void grpc_iomgr_platform_init(void) {
+static void iomgr_platform_init(void) {
   grpc_wakeup_fd_global_init();
   grpc_event_engine_init();
   grpc_register_tracer(&grpc_tcp_trace);
 }
 
-void grpc_iomgr_platform_flush(void) {}
+static void iomgr_platform_flush(void) {}
 
-void grpc_iomgr_platform_shutdown(void) {
+static void iomgr_platform_shutdown(void) {
   grpc_event_engine_shutdown();
   grpc_wakeup_fd_global_destroy();
+}
+
+static grpc_iomgr_platform_vtable vtable = {
+    iomgr_platform_init, iomgr_platform_flush, iomgr_platform_shutdown};
+
+grpc_iomgr_platform_vtable* grpc_default_iomgr_platform_vtable() {
+  return &vtable;
 }
 
 #endif /* GRPC_POSIX_SOCKET */

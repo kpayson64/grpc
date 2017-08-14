@@ -32,6 +32,8 @@
 #include "src/core/lib/iomgr/executor.h"
 #include "src/core/lib/iomgr/iomgr_internal.h"
 #include "src/core/lib/iomgr/network_status_tracker.h"
+#include "src/core/lib/iomgr/pollset.h"
+#include "src/core/lib/iomgr/pollset_set.h"
 #include "src/core/lib/iomgr/timer.h"
 #include "src/core/lib/iomgr/timer_manager.h"
 #include "src/core/lib/support/env.h"
@@ -52,6 +54,8 @@ void grpc_iomgr_init(grpc_exec_ctx *exec_ctx) {
   g_root_object.next = g_root_object.prev = &g_root_object;
   g_root_object.name = "root";
   grpc_network_status_init();
+  grpc_pollset_global_init();
+  grpc_pollset_set_global_init();
   grpc_iomgr_platform_init();
 }
 
