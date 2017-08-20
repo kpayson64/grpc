@@ -126,7 +126,6 @@ void uv_endpoint_write(grpc_endpoint* endpoint, char* buffer, size_t length) {
   buffers = gpr_malloc(sizeof(uv_buf_t));
   buffers[0].base = buffer;
   buffers[0].len = length;
-  gpr_log(GPR_ERROR, "CALLING ENDPOINT WRITE %i", (int) length);
 
   socket->write_buffers = buffers;
   socket->write_len = length;

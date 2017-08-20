@@ -35,7 +35,7 @@
 #include "src/core/lib/slice/slice_internal.h"
 #include "src/core/lib/slice/slice_string_helpers.h"
 
-#define GRPC_TRACER_ON_TCP_TRACE 0
+#define GRPC_TRACER_ON_TCP_TRACE 1
 
 typedef struct {
   grpc_endpoint base;
@@ -175,15 +175,12 @@ void grpc_custom_write_callback(grpc_endpoint* endpoint, size_t nwritten, grpc_e
   grpc_closure *cb = tcp->write_cb;
   tcp->write_cb = NULL;
   if (error == GRPC_ERROR_NONE) {
-    gpr_log(GPR_ERROR, "OUTGOING SLICE IDX %i", (int) tcp->outgoing_slice_idx);
     tcp->outgoing_byte_idx += nwritten;
     if (tcp->outgoing_byte_idx == GRPC_SLICE_LENGTH(tcp->write_slices->slices[tcp->outgoing_slice_idx])) {
       tcp->outgoing_slice_idx++;
       tcp->outgoing_byte_idx = 0;
     }
     if (tcp->outgoing_slice_idx == tcp->write_slices->count) {
-      gpr_log(GPR_ERROR, "WRITE SLICE COUNT %i", (int) tcp->write_slices->count);
-      //Write complete
       if (GRPC_TRACER_ON_TCP_TRACE) {
         const char *str = grpc_error_string(error);
         gpr_log(GPR_DEBUG, "write complete on %p: error=%s", tcp, str);
@@ -241,7 +238,6 @@ static void custom_endpoint_write(grpc_exec_ctx *exec_ctx, grpc_endpoint *ep,
     GRPC_CLOSURE_SCHED(exec_ctx, cb, GRPC_ERROR_NONE);
     return;
   }
-  gpr_log(GPR_ERROR, "TCP ENDPOINT WRITE");
   tcp->outgoing_slice_idx=0;
   tcp->outgoing_byte_idx=0;
   char* buffer = (char*) GRPC_SLICE_START_PTR(tcp->write_slices->slices[tcp->outgoing_slice_idx]);
