@@ -35,7 +35,7 @@
 #include "src/core/lib/slice/slice_internal.h"
 #include "src/core/lib/slice/slice_string_helpers.h"
 
-#define GRPC_TRACER_ON_TCP_TRACE 1
+#define GRPC_TRACER_ON_TCP_TRACE 0
 
 typedef struct {
   grpc_endpoint base;
@@ -192,6 +192,7 @@ void grpc_custom_write_callback(grpc_endpoint* endpoint, size_t nwritten, grpc_e
        buffer += tcp->outgoing_byte_idx;
        size_t len = GRPC_SLICE_LENGTH(tcp->write_slices->slices[tcp->outgoing_slice_idx]);
        len -= tcp->outgoing_byte_idx;
+       tcp->write_cb = cb;
        tcp->vtable->write((grpc_endpoint*)tcp, buffer, len);
     }
   } else {
