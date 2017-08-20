@@ -24,7 +24,7 @@
 #include <grpc/support/log.h>
 
 #include "src/core/lib/debug/trace.h"
-#include "src/core/lib/iomgr/iomgr_uv.h"
+#include "src/core/lib/iomgr/iomgr_custom.h"
 #include "src/core/lib/iomgr/timer.h"
 
 #include <uv.h>

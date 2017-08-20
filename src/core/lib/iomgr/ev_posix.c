@@ -193,7 +193,7 @@ void grpc_fd_notify_on_write(grpc_exec_ctx *exec_ctx, grpc_fd *fd,
   g_event_engine->fd_notify_on_write(exec_ctx, fd, closure);
 }
 
-size_t grpc_pollset_size(void) { return g_event_engine->pollset_size; }
+size_t pollset_size(void) { return g_event_engine->pollset_size; }
 
 void pollset_global_init(void){}
 void pollset_global_shutdown(void){}
@@ -271,7 +271,7 @@ static void pollset_set_del_pollset_set(grpc_exec_ctx *exec_ctx,
 static grpc_pollset_set_vtable pollset_set_vtable = {
   pollset_set_create, pollset_set_destroy, pollset_set_add_pollset,
   pollset_set_del_pollset, pollset_set_add_pollset_set,
-  pollset_set_del_pollset_set};
+  pollset_set_del_pollset_set, pollset_size};
 
 grpc_pollset_set_vtable* grpc_default_pollset_set_vtable() {
   return &pollset_set_vtable;

@@ -51,3 +51,9 @@ static grpc_pollset_set_vtable vtable = {
 grpc_pollset_set_vtable* grpc_custom_pollset_set_vtable() {
   return &vtable;
 }
+
+#ifdef GRPC_UV
+grpc_pollset_set_vtable* grpc_default_pollset_set_vtable() {
+  return &vtable;
+}
+#endif

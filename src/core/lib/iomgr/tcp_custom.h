@@ -32,14 +32,26 @@
 #include "src/core/lib/debug/trace.h"
 #include "src/core/lib/iomgr/endpoint.h"
 
-#include <uv.h>
-
 extern grpc_tracer_flag grpc_tcp_trace;
 
 #define GRPC_TCP_DEFAULT_READ_SLICE_SIZE 8192
 
-grpc_endpoint *grpc_tcp_create(uv_tcp_t *handle,
+typedef struct grpc_socket_vtable {
+  void* (*init)(grpc_endpoint* endpoint, void* arg);
+  void (*destroy)(grpc_endpoint* endpoint);
+  void (*shutdown)(grpc_endpoint* endpoint);
+  void (*close)(grpc_endpoint* endpoint);
+  void (*write)(grpc_endpoint* endpoint, char* buffer, size_t length);
+  void (*read)(grpc_endpoint* endpoint, char* buffer, size_t length);
+} grpc_socket_vtable;
+
+
+grpc_endpoint *custom_tcp_create(void *arg, grpc_socket_vtable* socket_vtable,
                                grpc_resource_quota *resource_quota,
                                char *peer_string);
+
+void* grpc_endpoint_get_socket(grpc_endpoint* endpoint);
+void grpc_custom_write_callback(grpc_endpoint* endpoint, size_t nwritten, grpc_error* error);
+void grpc_custom_read_callback(grpc_endpoint* endpoint, size_t nread, grpc_error* error);
 
 #endif /* GRPC_CORE_LIB_IOMGR_TCP_UV_H */

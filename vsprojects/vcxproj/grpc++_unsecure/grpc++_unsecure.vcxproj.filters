@@ -761,6 +761,9 @@
     <ClInclude Include="$(SolutionDir)\..\src\core\lib\iomgr\tcp_client_posix.h">
       <Filter>src\core\lib\iomgr</Filter>
     </ClInclude>
+    <ClInclude Include="$(SolutionDir)\..\src\core\lib\iomgr\tcp_custom.h">
+      <Filter>src\core\lib\iomgr</Filter>
+    </ClInclude>
     <ClInclude Include="$(SolutionDir)\..\src\core\lib\iomgr\tcp_posix.h">
       <Filter>src\core\lib\iomgr</Filter>
     </ClInclude>

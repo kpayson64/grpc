@@ -160,8 +160,9 @@ def get_c_tests(travis, test_lang) :
 
 
 def _check_compiler(compiler, supported_compilers):
-  if compiler not in supported_compilers:
-    raise Exception('Compiler %s not supported (on this platform).' % compiler)
+  pass
+  #if compiler not in supported_compilers:
+  #  raise Exception('Compiler %s not supported (on this platform).' % compiler)
 
 
 def _check_arch(arch, supported_archs):
@@ -245,7 +246,7 @@ class CLanguage(object):
       self._docker_distro, self._make_options = self._compiler_options(self.args.use_docker,
                                                                        self.args.compiler)
     if args.iomgr_platform == "uv":
-      cflags = '-DGRPC_UV -DGRPC_UV_THREAD_CHECK'
+      cflags = '-DGRPC_UV -DGRPC_UV_THREAD_CHECK -DGRPC_UV_TEST '
       try:
         cflags += subprocess.check_output(['pkg-config', '--cflags', 'libuv']).strip() + ' '
       except (subprocess.CalledProcessError, OSError):

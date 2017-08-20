@@ -1146,6 +1146,7 @@ src/core/lib/iomgr/pollset_set.h \
 src/core/lib/iomgr/pollset_set_custom.c \
 src/core/lib/iomgr/pollset_set_windows.c \
 src/core/lib/iomgr/pollset_set_windows.h \
+src/core/lib/iomgr/pollset_uv.c \
 src/core/lib/iomgr/pollset_uv.h \
 src/core/lib/iomgr/pollset_windows.c \
 src/core/lib/iomgr/pollset_windows.h \
@@ -1180,6 +1181,8 @@ src/core/lib/iomgr/tcp_client_posix.c \
 src/core/lib/iomgr/tcp_client_posix.h \
 src/core/lib/iomgr/tcp_client_uv.c \
 src/core/lib/iomgr/tcp_client_windows.c \
+src/core/lib/iomgr/tcp_custom.c \
+src/core/lib/iomgr/tcp_custom.h \
 src/core/lib/iomgr/tcp_posix.c \
 src/core/lib/iomgr/tcp_posix.h \
 src/core/lib/iomgr/tcp_server.h \

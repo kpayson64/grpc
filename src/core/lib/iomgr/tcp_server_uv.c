@@ -23,16 +23,20 @@
 #include <assert.h>
 #include <string.h>
 
+#include <uv.h>
+
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 
 #include "src/core/lib/iomgr/error.h"
 #include "src/core/lib/iomgr/exec_ctx.h"
-#include "src/core/lib/iomgr/iomgr_uv.h"
+#include "src/core/lib/iomgr/iomgr_custom.h"
 #include "src/core/lib/iomgr/sockaddr.h"
 #include "src/core/lib/iomgr/sockaddr_utils.h"
 #include "src/core/lib/iomgr/tcp_server.h"
-#include "src/core/lib/iomgr/tcp_uv.h"
+#include "src/core/lib/iomgr/tcp_custom.h"
+
+extern grpc_socket_vtable uv_socket_vtable;
 
 /* one listening port */
 typedef struct grpc_tcp_listener grpc_tcp_listener;
@@ -220,7 +224,7 @@ static void finish_accept(grpc_exec_ctx *exec_ctx, grpc_tcp_listener *sp) {
       gpr_log(GPR_DEBUG, "SERVER_CONNECT: %p accepted connection", sp->server);
     }
   }
-  ep = grpc_tcp_create(client, sp->server->resource_quota, peer_name_string);
+  ep = custom_tcp_create(client, &uv_socket_vtable, sp->server->resource_quota, peer_name_string);
   acceptor->from_server = sp->server;
   acceptor->port_index = sp->port_index;
   acceptor->fd_index = 0;

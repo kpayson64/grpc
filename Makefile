@@ -2941,6 +2941,7 @@ LIBGRPC_SRC = \
     src/core/lib/iomgr/pollset_set.c \
     src/core/lib/iomgr/pollset_set_custom.c \
     src/core/lib/iomgr/pollset_set_windows.c \
+    src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
     src/core/lib/iomgr/resolve_address_posix.c \
     src/core/lib/iomgr/resolve_address_uv.c \
@@ -2958,6 +2959,7 @@ LIBGRPC_SRC = \
     src/core/lib/iomgr/tcp_client_posix.c \
     src/core/lib/iomgr/tcp_client_uv.c \
     src/core/lib/iomgr/tcp_client_windows.c \
+    src/core/lib/iomgr/tcp_custom.c \
     src/core/lib/iomgr/tcp_posix.c \
     src/core/lib/iomgr/tcp_server_posix.c \
     src/core/lib/iomgr/tcp_server_utils_posix_common.c \
@@ -3286,6 +3288,7 @@ LIBGRPC_CRONET_SRC = \
     src/core/lib/iomgr/pollset_set.c \
     src/core/lib/iomgr/pollset_set_custom.c \
     src/core/lib/iomgr/pollset_set_windows.c \
+    src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
     src/core/lib/iomgr/resolve_address_posix.c \
     src/core/lib/iomgr/resolve_address_uv.c \
@@ -3303,6 +3306,7 @@ LIBGRPC_CRONET_SRC = \
     src/core/lib/iomgr/tcp_client_posix.c \
     src/core/lib/iomgr/tcp_client_uv.c \
     src/core/lib/iomgr/tcp_client_windows.c \
+    src/core/lib/iomgr/tcp_custom.c \
     src/core/lib/iomgr/tcp_posix.c \
     src/core/lib/iomgr/tcp_server_posix.c \
     src/core/lib/iomgr/tcp_server_utils_posix_common.c \
@@ -3598,6 +3602,7 @@ LIBGRPC_TEST_UTIL_SRC = \
     src/core/lib/iomgr/pollset_set.c \
     src/core/lib/iomgr/pollset_set_custom.c \
     src/core/lib/iomgr/pollset_set_windows.c \
+    src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
     src/core/lib/iomgr/resolve_address_posix.c \
     src/core/lib/iomgr/resolve_address_uv.c \
@@ -3615,6 +3620,7 @@ LIBGRPC_TEST_UTIL_SRC = \
     src/core/lib/iomgr/tcp_client_posix.c \
     src/core/lib/iomgr/tcp_client_uv.c \
     src/core/lib/iomgr/tcp_client_windows.c \
+    src/core/lib/iomgr/tcp_custom.c \
     src/core/lib/iomgr/tcp_posix.c \
     src/core/lib/iomgr/tcp_server_posix.c \
     src/core/lib/iomgr/tcp_server_utils_posix_common.c \
@@ -3847,6 +3853,7 @@ LIBGRPC_TEST_UTIL_UNSECURE_SRC = \
     src/core/lib/iomgr/pollset_set.c \
     src/core/lib/iomgr/pollset_set_custom.c \
     src/core/lib/iomgr/pollset_set_windows.c \
+    src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
     src/core/lib/iomgr/resolve_address_posix.c \
     src/core/lib/iomgr/resolve_address_uv.c \
@@ -3864,6 +3871,7 @@ LIBGRPC_TEST_UTIL_UNSECURE_SRC = \
     src/core/lib/iomgr/tcp_client_posix.c \
     src/core/lib/iomgr/tcp_client_uv.c \
     src/core/lib/iomgr/tcp_client_windows.c \
+    src/core/lib/iomgr/tcp_custom.c \
     src/core/lib/iomgr/tcp_posix.c \
     src/core/lib/iomgr/tcp_server_posix.c \
     src/core/lib/iomgr/tcp_server_utils_posix_common.c \
@@ -4069,6 +4077,7 @@ LIBGRPC_UNSECURE_SRC = \
     src/core/lib/iomgr/pollset_set.c \
     src/core/lib/iomgr/pollset_set_custom.c \
     src/core/lib/iomgr/pollset_set_windows.c \
+    src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
     src/core/lib/iomgr/resolve_address_posix.c \
     src/core/lib/iomgr/resolve_address_uv.c \
@@ -4086,6 +4095,7 @@ LIBGRPC_UNSECURE_SRC = \
     src/core/lib/iomgr/tcp_client_posix.c \
     src/core/lib/iomgr/tcp_client_uv.c \
     src/core/lib/iomgr/tcp_client_windows.c \
+    src/core/lib/iomgr/tcp_custom.c \
     src/core/lib/iomgr/tcp_posix.c \
     src/core/lib/iomgr/tcp_server_posix.c \
     src/core/lib/iomgr/tcp_server_utils_posix_common.c \
@@ -4748,6 +4758,7 @@ LIBGRPC++_CRONET_SRC = \
     src/core/lib/iomgr/pollset_set.c \
     src/core/lib/iomgr/pollset_set_custom.c \
     src/core/lib/iomgr/pollset_set_windows.c \
+    src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
     src/core/lib/iomgr/resolve_address_posix.c \
     src/core/lib/iomgr/resolve_address_uv.c \
@@ -4765,6 +4776,7 @@ LIBGRPC++_CRONET_SRC = \
     src/core/lib/iomgr/tcp_client_posix.c \
     src/core/lib/iomgr/tcp_client_uv.c \
     src/core/lib/iomgr/tcp_client_windows.c \
+    src/core/lib/iomgr/tcp_custom.c \
     src/core/lib/iomgr/tcp_posix.c \
     src/core/lib/iomgr/tcp_server_posix.c \
     src/core/lib/iomgr/tcp_server_utils_posix_common.c \

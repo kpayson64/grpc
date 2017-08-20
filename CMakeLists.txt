@@ -994,6 +994,7 @@ add_library(grpc
   src/core/lib/iomgr/pollset_set.c
   src/core/lib/iomgr/pollset_set_custom.c
   src/core/lib/iomgr/pollset_set_windows.c
+  src/core/lib/iomgr/pollset_uv.c
   src/core/lib/iomgr/pollset_windows.c
   src/core/lib/iomgr/resolve_address_posix.c
   src/core/lib/iomgr/resolve_address_uv.c
@@ -1011,6 +1012,7 @@ add_library(grpc
   src/core/lib/iomgr/tcp_client_posix.c
   src/core/lib/iomgr/tcp_client_uv.c
   src/core/lib/iomgr/tcp_client_windows.c
+  src/core/lib/iomgr/tcp_custom.c
   src/core/lib/iomgr/tcp_posix.c
   src/core/lib/iomgr/tcp_server_posix.c
   src/core/lib/iomgr/tcp_server_utils_posix_common.c
@@ -1341,6 +1343,7 @@ add_library(grpc_cronet
   src/core/lib/iomgr/pollset_set.c
   src/core/lib/iomgr/pollset_set_custom.c
   src/core/lib/iomgr/pollset_set_windows.c
+  src/core/lib/iomgr/pollset_uv.c
   src/core/lib/iomgr/pollset_windows.c
   src/core/lib/iomgr/resolve_address_posix.c
   src/core/lib/iomgr/resolve_address_uv.c
@@ -1358,6 +1361,7 @@ add_library(grpc_cronet
   src/core/lib/iomgr/tcp_client_posix.c
   src/core/lib/iomgr/tcp_client_uv.c
   src/core/lib/iomgr/tcp_client_windows.c
+  src/core/lib/iomgr/tcp_custom.c
   src/core/lib/iomgr/tcp_posix.c
   src/core/lib/iomgr/tcp_server_posix.c
   src/core/lib/iomgr/tcp_server_utils_posix_common.c
@@ -1656,6 +1660,7 @@ add_library(grpc_test_util
   src/core/lib/iomgr/pollset_set.c
   src/core/lib/iomgr/pollset_set_custom.c
   src/core/lib/iomgr/pollset_set_windows.c
+  src/core/lib/iomgr/pollset_uv.c
   src/core/lib/iomgr/pollset_windows.c
   src/core/lib/iomgr/resolve_address_posix.c
   src/core/lib/iomgr/resolve_address_uv.c
@@ -1673,6 +1678,7 @@ add_library(grpc_test_util
   src/core/lib/iomgr/tcp_client_posix.c
   src/core/lib/iomgr/tcp_client_uv.c
   src/core/lib/iomgr/tcp_client_windows.c
+  src/core/lib/iomgr/tcp_custom.c
   src/core/lib/iomgr/tcp_posix.c
   src/core/lib/iomgr/tcp_server_posix.c
   src/core/lib/iomgr/tcp_server_utils_posix_common.c
@@ -1916,6 +1922,7 @@ add_library(grpc_test_util_unsecure
   src/core/lib/iomgr/pollset_set.c
   src/core/lib/iomgr/pollset_set_custom.c
   src/core/lib/iomgr/pollset_set_windows.c
+  src/core/lib/iomgr/pollset_uv.c
   src/core/lib/iomgr/pollset_windows.c
   src/core/lib/iomgr/resolve_address_posix.c
   src/core/lib/iomgr/resolve_address_uv.c
@@ -1933,6 +1940,7 @@ add_library(grpc_test_util_unsecure
   src/core/lib/iomgr/tcp_client_posix.c
   src/core/lib/iomgr/tcp_client_uv.c
   src/core/lib/iomgr/tcp_client_windows.c
+  src/core/lib/iomgr/tcp_custom.c
   src/core/lib/iomgr/tcp_posix.c
   src/core/lib/iomgr/tcp_server_posix.c
   src/core/lib/iomgr/tcp_server_utils_posix_common.c
@@ -2162,6 +2170,7 @@ add_library(grpc_unsecure
   src/core/lib/iomgr/pollset_set.c
   src/core/lib/iomgr/pollset_set_custom.c
   src/core/lib/iomgr/pollset_set_windows.c
+  src/core/lib/iomgr/pollset_uv.c
   src/core/lib/iomgr/pollset_windows.c
   src/core/lib/iomgr/resolve_address_posix.c
   src/core/lib/iomgr/resolve_address_uv.c
@@ -2179,6 +2188,7 @@ add_library(grpc_unsecure
   src/core/lib/iomgr/tcp_client_posix.c
   src/core/lib/iomgr/tcp_client_uv.c
   src/core/lib/iomgr/tcp_client_windows.c
+  src/core/lib/iomgr/tcp_custom.c
   src/core/lib/iomgr/tcp_posix.c
   src/core/lib/iomgr/tcp_server_posix.c
   src/core/lib/iomgr/tcp_server_utils_posix_common.c
@@ -2858,6 +2868,7 @@ add_library(grpc++_cronet
   src/core/lib/iomgr/pollset_set.c
   src/core/lib/iomgr/pollset_set_custom.c
   src/core/lib/iomgr/pollset_set_windows.c
+  src/core/lib/iomgr/pollset_uv.c
   src/core/lib/iomgr/pollset_windows.c
   src/core/lib/iomgr/resolve_address_posix.c
   src/core/lib/iomgr/resolve_address_uv.c
@@ -2875,6 +2886,7 @@ add_library(grpc++_cronet
   src/core/lib/iomgr/tcp_client_posix.c
   src/core/lib/iomgr/tcp_client_uv.c
   src/core/lib/iomgr/tcp_client_windows.c
+  src/core/lib/iomgr/tcp_custom.c
   src/core/lib/iomgr/tcp_posix.c
   src/core/lib/iomgr/tcp_server_posix.c
   src/core/lib/iomgr/tcp_server_utils_posix_common.c

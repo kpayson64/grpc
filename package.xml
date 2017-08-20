@@ -321,6 +321,7 @@
     <file baseinstalldir="/" name="src/core/lib/iomgr/sys_epoll_wrapper.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_posix.h" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_custom.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_posix.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_server.h" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_server_utils_posix.h" role="src" />
@@ -454,6 +455,7 @@
     <file baseinstalldir="/" name="src/core/lib/iomgr/pollset_set.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/pollset_set_custom.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/pollset_set_windows.c" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/pollset_uv.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/pollset_windows.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/resolve_address_posix.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/resolve_address_uv.c" role="src" />
@@ -471,6 +473,7 @@
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_posix.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_uv.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_windows.c" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_custom.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_posix.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_server_posix.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_server_utils_posix_common.c" role="src" />

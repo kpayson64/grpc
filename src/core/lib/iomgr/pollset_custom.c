@@ -57,6 +57,11 @@ static grpc_error *pollset_work(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
                               grpc_pollset_worker **worker, gpr_timespec now,
                               gpr_timespec deadline) {
   GRPC_UV_ASSERT_SAME_THREAD();
+  gpr_mu_unlock(&g_polling_mu);
+  if (!grpc_closure_list_empty(exec_ctx->closure_list)) {
+    grpc_exec_ctx_flush(exec_ctx);
+  }
+  gpr_mu_lock(&g_polling_mu);
   return GRPC_ERROR_NONE;
 }
 
@@ -66,6 +71,14 @@ static grpc_error *pollset_kick(grpc_pollset *pollset,
   return GRPC_ERROR_NONE;
 }
 
+static size_t pollset_size(void) { return sizeof(grpc_pollset);}
+
 grpc_pollset_vtable custom_pollset_vtable = {
   pollset_global_init, pollset_global_shutdown, pollset_init,
-  pollset_shutdown, pollset_destroy, pollset_work, pollset_kick};
+  pollset_shutdown, pollset_destroy, pollset_work, pollset_kick, pollset_size};
+
+#if defined(GRPC_UV) && !defined(GRPC_UV_TEST)
+grpc_pollset_vtable* grpc_default_pollset_vtable() {
+  return &custom_pollset_vtable;
+}
+#endif

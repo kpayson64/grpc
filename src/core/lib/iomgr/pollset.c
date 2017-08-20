@@ -56,3 +56,6 @@ grpc_error *grpc_pollset_kick(grpc_pollset *pollset,
   return pollset_vtable->kick(pollset, specific_worker);
 }
 
+size_t grpc_pollset_size(void) { return pollset_vtable->pollset_size(); }
+
+

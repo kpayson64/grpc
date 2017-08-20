@@ -21,6 +21,7 @@
 
 #include "src/core/lib/iomgr/iomgr_internal.h"
 
+#include <grpc/support/log.h>
 #include <grpc/support/thd.h>
 
 /* The thread ID of the thread on which grpc was initialized. Used to verify

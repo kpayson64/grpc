@@ -21,18 +21,20 @@
 #ifdef GRPC_UV
 
 #include <string.h>
+#include <uv.h>
 
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 
 #include "src/core/lib/iomgr/error.h"
-#include "src/core/lib/iomgr/iomgr_uv.h"
+#include "src/core/lib/iomgr/iomgr_custom.h"
 #include "src/core/lib/iomgr/sockaddr_utils.h"
 #include "src/core/lib/iomgr/tcp_client.h"
-#include "src/core/lib/iomgr/tcp_uv.h"
+#include "src/core/lib/iomgr/tcp_custom.h"
 #include "src/core/lib/iomgr/timer.h"
 
 extern grpc_tracer_flag grpc_tcp_trace;
+extern grpc_socket_vtable uv_socket_vtable;
 
 typedef struct grpc_uv_tcp_connect {
   uv_connect_t connect_req;
@@ -84,8 +86,8 @@ static void uv_tc_on_connect(uv_connect_t *req, int status) {
   grpc_closure *closure = connect->closure;
   grpc_timer_cancel(&exec_ctx, &connect->alarm);
   if (status == 0) {
-    *connect->endpoint = grpc_tcp_create(
-        connect->tcp_handle, connect->resource_quota, connect->addr_name);
+    *connect->endpoint = custom_tcp_create(
+        connect->tcp_handle, &uv_socket_vtable, connect->resource_quota, connect->addr_name);
   } else {
     error = GRPC_ERROR_CREATE_FROM_STATIC_STRING(
         "Failed to connect to remote host");

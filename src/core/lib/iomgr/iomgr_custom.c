@@ -23,6 +23,7 @@
 #include "src/core/lib/iomgr/exec_ctx.h"
 #include "src/core/lib/iomgr/executor.h"
 #include "src/core/lib/iomgr/iomgr_internal.h"
+#include "src/core/lib/iomgr/pollset.h"
 
 gpr_thd_id g_init_thread;
 
@@ -33,7 +34,7 @@ static void iomgr_platform_init(void) {
   grpc_exec_ctx_finish(&exec_ctx);
 }
 static void iomgr_platform_flush(void) {}
-static void iomgr_platform_shutdown(void) {}//TODO call grpc_pollset_global_shutdown}
+static void iomgr_platform_shutdown(void) {grpc_pollset_global_shutdown();}
 
 static grpc_iomgr_platform_vtable vtable = {
     iomgr_platform_init, iomgr_platform_flush, iomgr_platform_shutdown};
@@ -41,3 +42,9 @@ static grpc_iomgr_platform_vtable vtable = {
 grpc_iomgr_platform_vtable* custom_iomgr_platform_vtable() {
   return &vtable;
 }
+
+#ifdef GRPC_UV
+grpc_iomgr_platform_vtable* grpc_default_iomgr_platform_vtable() {
+  return &vtable;
+}
+#endif

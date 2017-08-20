@@ -51,6 +51,7 @@ typedef struct grpc_pollset_vtable {
                               gpr_timespec deadline);
   grpc_error* (*kick)(grpc_pollset *pollset,
                       grpc_pollset_worker *specific_worker);
+  size_t (*pollset_size)(void);
 } grpc_pollset_vtable;
 
 grpc_pollset_vtable* grpc_default_pollset_vtable();
