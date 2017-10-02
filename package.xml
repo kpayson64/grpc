@@ -470,16 +470,17 @@
     <file baseinstalldir="/" name="src/core/lib/iomgr/socket_utils_uv.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/socket_utils_windows.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/socket_windows.c" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_custom.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_posix.c" role="src" />
-    <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_uv.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_client_windows.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_custom.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_posix.c" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_server.c" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_server_custom.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_server_posix.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_server_utils_posix_common.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_server_utils_posix_ifaddrs.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_server_utils_posix_noifaddrs.c" role="src" />
-    <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_server_uv.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_server_windows.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_uv.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/tcp_windows.c" role="src" />

@@ -18,12 +18,8 @@
 
 #include "src/core/lib/iomgr/port.h"
 
-#ifdef GRPC_UV
-
 #include <assert.h>
 #include <string.h>
-
-#include <uv.h>
 
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
@@ -36,15 +32,16 @@
 #include "src/core/lib/iomgr/tcp_server.h"
 #include "src/core/lib/iomgr/tcp_custom.h"
 
-extern grpc_socket_vtable uv_socket_vtable;
+extern grpc_socket_vtable* grpc_custom_socket_vtable;
 
 /* one listening port */
-typedef struct grpc_tcp_listener grpc_tcp_listener;
 struct grpc_tcp_listener {
-  uv_tcp_t *handle;
   grpc_tcp_server *server;
   unsigned port_index;
   int port;
+
+   grpc_socket_wrapper* socket;
+
   /* linked list */
   struct grpc_tcp_listener *next;
 
@@ -77,7 +74,7 @@ struct grpc_tcp_server {
   grpc_resource_quota *resource_quota;
 };
 
-grpc_error *grpc_tcp_server_create(grpc_exec_ctx *exec_ctx,
+static grpc_error *tcp_server_create(grpc_exec_ctx *exec_ctx,
                                    grpc_closure *shutdown_complete,
                                    const grpc_channel_args *args,
                                    grpc_tcp_server **server) {
@@ -111,13 +108,13 @@ grpc_error *grpc_tcp_server_create(grpc_exec_ctx *exec_ctx,
   return GRPC_ERROR_NONE;
 }
 
-grpc_tcp_server *grpc_tcp_server_ref(grpc_tcp_server *s) {
+static grpc_tcp_server *tcp_server_ref(grpc_tcp_server *s) {
   GRPC_UV_ASSERT_SAME_THREAD();
   gpr_ref(&s->refs);
   return s;
 }
 
-void grpc_tcp_server_shutdown_starting_add(grpc_tcp_server *s,
+static void tcp_server_shutdown_starting_add(grpc_tcp_server *s,
                                            grpc_closure *shutdown_starting) {
   grpc_closure_list_append(&s->shutdown_starting, shutdown_starting,
                            GRPC_ERROR_NONE);
@@ -133,15 +130,14 @@ static void finish_shutdown(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s) {
     grpc_tcp_listener *sp = s->head;
     s->head = sp->next;
     sp->next = NULL;
-    gpr_free(sp->handle);
+    gpr_free(sp->socket);
     gpr_free(sp);
   }
   grpc_resource_quota_unref_internal(exec_ctx, s->resource_quota);
   gpr_free(s);
 }
 
-static void handle_close_callback(uv_handle_t *handle) {
-  grpc_tcp_listener *sp = (grpc_tcp_listener *)handle->data;
+void grpc_custom_close_listener_callback(grpc_tcp_listener* sp) {
   grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
   sp->server->open_ports--;
   if (sp->server->open_ports == 0 && sp->server->shutdown) {
@@ -151,9 +147,10 @@ static void handle_close_callback(uv_handle_t *handle) {
 }
 
 static void close_listener(grpc_tcp_listener *sp) {
+  grpc_socket_wrapper* socket = sp->socket;
   if (!sp->closed) {
     sp->closed = true;
-    uv_close((uv_handle_t *)sp->handle, handle_close_callback);
+    grpc_custom_socket_vtable->close(socket);
   }
 }
 
@@ -176,7 +173,7 @@ static void tcp_server_destroy(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s) {
   }
 }
 
-void grpc_tcp_server_unref(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s) {
+static void tcp_server_unref(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s) {
   GRPC_UV_ASSERT_SAME_THREAD();
   if (gpr_unref(&s->refs)) {
     /* Complete shutdown_starting work before destroying. */
@@ -193,28 +190,25 @@ void grpc_tcp_server_unref(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s) {
   }
 }
 
-static void finish_accept(grpc_exec_ctx *exec_ctx, grpc_tcp_listener *sp) {
+static void finish_accept(grpc_exec_ctx *exec_ctx, grpc_tcp_listener *sp, void* s) {
   grpc_tcp_server_acceptor *acceptor = gpr_malloc(sizeof(*acceptor));
-  uv_tcp_t *client;
   grpc_endpoint *ep = NULL;
   grpc_resolved_address peer_name;
   char *peer_name_string;
-  int err;
-  uv_tcp_t *server = sp->handle;
+  grpc_error* err;
 
-  client = gpr_malloc(sizeof(uv_tcp_t));
-  uv_tcp_init(uv_default_loop(), client);
-  // UV documentation says this is guaranteed to succeed
-  uv_accept((uv_stream_t *)server, (uv_stream_t *)client);
+  grpc_socket_wrapper* socket = gpr_malloc(sizeof(grpc_socket_wrapper));
+  grpc_custom_socket_vtable->init(s, 0);
   peer_name_string = NULL;
   memset(&peer_name, 0, sizeof(grpc_resolved_address));
   peer_name.len = sizeof(struct sockaddr_storage);
-  err = uv_tcp_getpeername(client, (struct sockaddr *)&peer_name.addr,
-                           (int *)&peer_name.len);
-  if (err == 0) {
+  err = grpc_custom_socket_vtable->getpeername(socket, (struct sockaddr *)&peer_name.addr,
+                                    (int *)&peer_name.len);
+  if (err == GRPC_ERROR_NONE) {
     peer_name_string = grpc_sockaddr_to_uri(&peer_name);
   } else {
-    gpr_log(GPR_INFO, "uv_tcp_getpeername error: %s", uv_strerror(err));
+    GRPC_LOG_IF_ERROR("getpeername error", err);
+    GRPC_ERROR_UNREF(err);
   }
   if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     if (peer_name_string) {
@@ -224,7 +218,7 @@ static void finish_accept(grpc_exec_ctx *exec_ctx, grpc_tcp_listener *sp) {
       gpr_log(GPR_DEBUG, "SERVER_CONNECT: %p accepted connection", sp->server);
     }
   }
-  ep = custom_tcp_create(client, &uv_socket_vtable, sp->server->resource_quota, peer_name_string);
+  ep = custom_tcp_endpoint_create(socket, sp->server->resource_quota, peer_name_string);
   acceptor->from_server = sp->server;
   acceptor->port_index = sp->port_index;
   acceptor->fd_index = 0;
@@ -233,73 +227,43 @@ static void finish_accept(grpc_exec_ctx *exec_ctx, grpc_tcp_listener *sp) {
   gpr_free(peer_name_string);
 }
 
-static void on_connect(uv_stream_t *server, int status) {
-  grpc_tcp_listener *sp = (grpc_tcp_listener *)server->data;
+void grpc_custom_accept_callback(grpc_socket_wrapper* socket, grpc_socket_wrapper* client, grpc_error* error) {
+  grpc_tcp_listener *sp = socket->listener;
   grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
 
-  if (status < 0) {
-    switch (status) {
-      case UV_EINTR:
-      case UV_EAGAIN:
-        return;
-      default:
-        close_listener(sp);
-        return;
-    }
-  }
-
   GPR_ASSERT(!sp->has_pending_connection);
-
-  if (GRPC_TRACER_ON(grpc_tcp_trace)) {
-    gpr_log(GPR_DEBUG, "SERVER_CONNECT: %p incoming connection", sp->server);
-  }
-
-  // Create acceptor.
-  if (sp->server->on_accept_cb) {
-    finish_accept(&exec_ctx, sp);
+  if (error != GRPC_ERROR_NONE) {
+    grpc_custom_socket_vtable->close(socket);
   } else {
-    sp->has_pending_connection = true;
+    finish_accept(&exec_ctx, sp, client);
   }
   grpc_exec_ctx_finish(&exec_ctx);
 }
 
-static grpc_error *add_socket_to_server(grpc_tcp_server *s, uv_tcp_t *handle,
+static grpc_error *add_socket_to_server(grpc_tcp_server *s, grpc_socket_wrapper* socket,
                                         const grpc_resolved_address *addr,
                                         unsigned port_index,
                                         grpc_tcp_listener **listener) {
   grpc_tcp_listener *sp = NULL;
   int port = -1;
-  int status;
   grpc_error *error;
   grpc_resolved_address sockname_temp;
 
   // The last argument to uv_tcp_bind is flags
-  status = uv_tcp_bind(handle, (struct sockaddr *)addr->addr, 0);
-  if (status != 0) {
-    error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("Failed to bind to port");
-    error =
-        grpc_error_set_str(error, GRPC_ERROR_STR_OS_ERROR,
-                           grpc_slice_from_static_string(uv_strerror(status)));
+  error = grpc_custom_socket_vtable->bind(socket, (struct sockaddr *)addr->addr, 0);
+  if (error != GRPC_ERROR_NONE) {
     return error;
   }
 
-  status = uv_listen((uv_stream_t *)handle, SOMAXCONN, on_connect);
-  if (status != 0) {
-    error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("Failed to listen to port");
-    error =
-        grpc_error_set_str(error, GRPC_ERROR_STR_OS_ERROR,
-                           grpc_slice_from_static_string(uv_strerror(status)));
+  error = grpc_custom_socket_vtable->listen(socket);
+  if (error != GRPC_ERROR_NONE) {
     return error;
   }
 
   sockname_temp.len = (int)sizeof(struct sockaddr_storage);
-  status = uv_tcp_getsockname(handle, (struct sockaddr *)&sockname_temp.addr,
-                              (int *)&sockname_temp.len);
-  if (status != 0) {
-    error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("getsockname failed");
-    error =
-        grpc_error_set_str(error, GRPC_ERROR_STR_OS_ERROR,
-                           grpc_slice_from_static_string(uv_strerror(status)));
+  error = grpc_custom_socket_vtable->getsockname(socket, (struct sockaddr *)&sockname_temp.addr,
+                                      (int *)&sockname_temp.len);
+  if (error != GRPC_ERROR_NONE) {
     return error;
   }
 
@@ -316,30 +280,27 @@ static grpc_error *add_socket_to_server(grpc_tcp_server *s, uv_tcp_t *handle,
   }
   s->tail = sp;
   sp->server = s;
-  sp->handle = handle;
+  sp->socket = socket;
   sp->port = port;
   sp->port_index = port_index;
   sp->closed = false;
-  handle->data = sp;
   s->open_ports++;
-  GPR_ASSERT(sp->handle);
   *listener = sp;
 
   return GRPC_ERROR_NONE;
 }
 
-grpc_error *grpc_tcp_server_add_port(grpc_tcp_server *s,
+static grpc_error *tcp_server_add_port(grpc_tcp_server *s,
                                      const grpc_resolved_address *addr,
                                      int *port) {
   // This function is mostly copied from tcp_server_windows.c
   grpc_tcp_listener *sp = NULL;
-  uv_tcp_t *handle;
+  grpc_socket_wrapper *socket;
   grpc_resolved_address addr6_v4mapped;
   grpc_resolved_address wildcard;
   grpc_resolved_address *allocated_addr = NULL;
   grpc_resolved_address sockname_temp;
   unsigned port_index = 0;
-  int status;
   grpc_error *error = GRPC_ERROR_NONE;
   int family;
 
@@ -353,8 +314,9 @@ grpc_error *grpc_tcp_server_add_port(grpc_tcp_server *s,
      as some previously created listener. */
   if (grpc_sockaddr_get_port(addr) == 0) {
     for (sp = s->head; sp; sp = sp->next) {
+      socket = sp->socket;
       sockname_temp.len = sizeof(struct sockaddr_storage);
-      if (0 == uv_tcp_getsockname(sp->handle,
+      if (0 == grpc_custom_socket_vtable->getsockname(socket,
                                   (struct sockaddr *)&sockname_temp.addr,
                                   (int *)&sockname_temp.len)) {
         *port = grpc_sockaddr_get_port(&sockname_temp);
@@ -380,31 +342,6 @@ grpc_error *grpc_tcp_server_add_port(grpc_tcp_server *s,
     addr = &wildcard;
   }
 
-  handle = gpr_malloc(sizeof(uv_tcp_t));
-
-  family = grpc_sockaddr_get_family(addr);
-  status = uv_tcp_init_ex(uv_default_loop(), handle, (unsigned int)family);
-#if defined(GPR_LINUX) && defined(SO_REUSEPORT)
-  if (family == AF_INET || family == AF_INET6) {
-    int fd;
-    uv_fileno((uv_handle_t *)handle, &fd);
-    int enable = 1;
-    setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable));
-  }
-#endif /* GPR_LINUX && SO_REUSEPORT */
-
-  if (status == 0) {
-    error = add_socket_to_server(s, handle, addr, port_index, &sp);
-  } else {
-    error = GRPC_ERROR_CREATE_FROM_STATIC_STRING(
-        "Failed to initialize UV tcp handle");
-    error =
-        grpc_error_set_str(error, GRPC_ERROR_STR_OS_ERROR,
-                           grpc_slice_from_static_string(uv_strerror(status)));
-  }
-
-  gpr_free(allocated_addr);
-
   if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     char *port_string;
     grpc_sockaddr_to_string(&port_string, addr, 0);
@@ -416,6 +353,23 @@ grpc_error *grpc_tcp_server_add_port(grpc_tcp_server *s,
       gpr_log(GPR_DEBUG, "SERVER %p add_port error=%s", s, str);
     }
   }
+
+  family = grpc_sockaddr_get_family(addr);
+  socket = gpr_malloc(sizeof(grpc_socket_wrapper));
+  socket->endpoint = NULL;
+  socket->listener = NULL;
+  grpc_custom_socket_vtable->init(socket, family);
+
+  if(error == GRPC_ERROR_NONE) {
+#if defined(GPR_LINUX) && defined(SO_REUSEPORT)
+    if (family == AF_INET || family == AF_INET6) {
+      int enable = 1;
+      grpc_custom_socket_vtable->setsockopt(socket, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable));
+    }
+#endif /* GPR_LINUX && SO_REUSEPORT */
+    error = add_socket_to_server(s, socket, addr, port_index, &sp);
+  }
+  gpr_free(allocated_addr);
 
   if (error != GRPC_ERROR_NONE) {
     grpc_error *error_out = GRPC_ERROR_CREATE_REFERENCING_FROM_STATIC_STRING(
@@ -430,7 +384,7 @@ grpc_error *grpc_tcp_server_add_port(grpc_tcp_server *s,
   return error;
 }
 
-void grpc_tcp_server_start(grpc_exec_ctx *exec_ctx, grpc_tcp_server *server,
+static void tcp_server_start(grpc_exec_ctx *exec_ctx, grpc_tcp_server *server,
                            grpc_pollset **pollsets, size_t pollset_count,
                            grpc_tcp_server_cb on_accept_cb, void *cb_arg) {
   grpc_tcp_listener *sp;
@@ -446,13 +400,25 @@ void grpc_tcp_server_start(grpc_exec_ctx *exec_ctx, grpc_tcp_server *server,
   server->on_accept_cb_arg = cb_arg;
   for (sp = server->head; sp; sp = sp->next) {
     if (sp->has_pending_connection) {
-      finish_accept(exec_ctx, sp);
+      grpc_custom_socket_vtable->accept(sp->socket);
       sp->has_pending_connection = false;
     }
   }
 }
 
-void grpc_tcp_server_shutdown_listeners(grpc_exec_ctx *exec_ctx,
+static unsigned tcp_server_port_fd_count(grpc_tcp_server *s, unsigned port_index) {
+  return 0;
+}
+
+static int tcp_server_port_fd(grpc_tcp_server *s, unsigned port_index,
+                            unsigned fd_index) {
+  return -1;
+}
+
+static void tcp_server_shutdown_listeners(grpc_exec_ctx *exec_ctx,
                                         grpc_tcp_server *s) {}
 
-#endif /* GRPC_UV */
+grpc_tcp_server_vtable custom_tcp_server_vtable = {
+tcp_server_create, tcp_server_start, tcp_server_add_port, tcp_server_port_fd_count, tcp_server_port_fd,
+tcp_server_ref, tcp_server_shutdown_starting_add, tcp_server_unref,
+tcp_server_shutdown_listeners};

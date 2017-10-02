@@ -68,7 +68,7 @@ static void init(void) {
 #endif
 }
 
-grpc_error *grpc_tcp_server_create(grpc_exec_ctx *exec_ctx,
+static grpc_error *tcp_server_create(grpc_exec_ctx *exec_ctx,
                                    grpc_closure *shutdown_complete,
                                    const grpc_channel_args *args,
                                    grpc_tcp_server **server) {
@@ -391,7 +391,7 @@ static grpc_error *clone_port(grpc_tcp_listener *listener, unsigned count) {
   return GRPC_ERROR_NONE;
 }
 
-grpc_error *grpc_tcp_server_add_port(grpc_tcp_server *s,
+static grpc_error *tcp_server_add_port(grpc_tcp_server *s,
                                      const grpc_resolved_address *addr,
                                      int *out_port) {
   grpc_tcp_listener *sp;
@@ -455,7 +455,7 @@ static grpc_tcp_listener *get_port_index(grpc_tcp_server *s,
   return NULL;
 }
 
-unsigned grpc_tcp_server_port_fd_count(grpc_tcp_server *s,
+unsigned tcp_server_port_fd_count(grpc_tcp_server *s,
                                        unsigned port_index) {
   unsigned num_fds = 0;
   gpr_mu_lock(&s->mu);
@@ -467,7 +467,7 @@ unsigned grpc_tcp_server_port_fd_count(grpc_tcp_server *s,
   return num_fds;
 }
 
-int grpc_tcp_server_port_fd(grpc_tcp_server *s, unsigned port_index,
+static int tcp_server_port_fd(grpc_tcp_server *s, unsigned port_index,
                             unsigned fd_index) {
   gpr_mu_lock(&s->mu);
   grpc_tcp_listener *sp = get_port_index(s, port_index);
@@ -481,7 +481,7 @@ int grpc_tcp_server_port_fd(grpc_tcp_server *s, unsigned port_index,
   return -1;
 }
 
-void grpc_tcp_server_start(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s,
+static void tcp_server_start(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s,
                            grpc_pollset **pollsets, size_t pollset_count,
                            grpc_tcp_server_cb on_accept_cb,
                            void *on_accept_cb_arg) {
@@ -523,12 +523,12 @@ void grpc_tcp_server_start(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s,
   gpr_mu_unlock(&s->mu);
 }
 
-grpc_tcp_server *grpc_tcp_server_ref(grpc_tcp_server *s) {
+grpc_tcp_server *tcp_server_ref(grpc_tcp_server *s) {
   gpr_ref_non_zero(&s->refs);
   return s;
 }
 
-void grpc_tcp_server_shutdown_starting_add(grpc_tcp_server *s,
+static void tcp_server_shutdown_starting_add(grpc_tcp_server *s,
                                            grpc_closure *shutdown_starting) {
   gpr_mu_lock(&s->mu);
   grpc_closure_list_append(&s->shutdown_starting, shutdown_starting,
@@ -536,7 +536,7 @@ void grpc_tcp_server_shutdown_starting_add(grpc_tcp_server *s,
   gpr_mu_unlock(&s->mu);
 }
 
-void grpc_tcp_server_unref(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s) {
+static void tcp_server_unref(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s) {
   if (gpr_unref(&s->refs)) {
     grpc_tcp_server_shutdown_listeners(exec_ctx, s);
     gpr_mu_lock(&s->mu);
@@ -546,7 +546,7 @@ void grpc_tcp_server_unref(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s) {
   }
 }
 
-void grpc_tcp_server_shutdown_listeners(grpc_exec_ctx *exec_ctx,
+static void tcp_server_shutdown_listeners(grpc_exec_ctx *exec_ctx,
                                         grpc_tcp_server *s) {
   gpr_mu_lock(&s->mu);
   s->shutdown_listeners = true;
@@ -561,4 +561,8 @@ void grpc_tcp_server_shutdown_listeners(grpc_exec_ctx *exec_ctx,
   gpr_mu_unlock(&s->mu);
 }
 
+grpc_tcp_server_vtable posix_tcp_server_vtable = {
+tcp_server_create, tcp_server_start, tcp_server_add_port, tcp_server_port_fd_count, tcp_server_port_fd,
+tcp_server_ref, tcp_server_shutdown_starting_add, tcp_server_unref,
+tcp_server_shutdown_listeners};
 #endif

@@ -229,7 +229,7 @@ void grpc_pollset_add_fd(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
 
 static grpc_pollset_vtable pollset_vtable = {
   pollset_global_init, pollset_global_shutdown, pollset_init,
-  pollset_shutdown, pollset_destroy, pollset_work, pollset_kick};
+  pollset_shutdown, pollset_destroy, pollset_work, pollset_kick, pollset_size};
 
 grpc_pollset_vtable* grpc_default_pollset_vtable() {
   return &pollset_vtable;
@@ -271,7 +271,7 @@ static void pollset_set_del_pollset_set(grpc_exec_ctx *exec_ctx,
 static grpc_pollset_set_vtable pollset_set_vtable = {
   pollset_set_create, pollset_set_destroy, pollset_set_add_pollset,
   pollset_set_del_pollset, pollset_set_add_pollset_set,
-  pollset_set_del_pollset_set, pollset_size};
+  pollset_set_del_pollset_set};
 
 grpc_pollset_set_vtable* grpc_default_pollset_set_vtable() {
   return &pollset_set_vtable;

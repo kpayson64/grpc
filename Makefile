@@ -2956,16 +2956,17 @@ LIBGRPC_SRC = \
     src/core/lib/iomgr/socket_utils_uv.c \
     src/core/lib/iomgr/socket_utils_windows.c \
     src/core/lib/iomgr/socket_windows.c \
+    src/core/lib/iomgr/tcp_client_custom.c \
     src/core/lib/iomgr/tcp_client_posix.c \
-    src/core/lib/iomgr/tcp_client_uv.c \
     src/core/lib/iomgr/tcp_client_windows.c \
     src/core/lib/iomgr/tcp_custom.c \
     src/core/lib/iomgr/tcp_posix.c \
+    src/core/lib/iomgr/tcp_server.c \
+    src/core/lib/iomgr/tcp_server_custom.c \
     src/core/lib/iomgr/tcp_server_posix.c \
     src/core/lib/iomgr/tcp_server_utils_posix_common.c \
     src/core/lib/iomgr/tcp_server_utils_posix_ifaddrs.c \
     src/core/lib/iomgr/tcp_server_utils_posix_noifaddrs.c \
-    src/core/lib/iomgr/tcp_server_uv.c \
     src/core/lib/iomgr/tcp_server_windows.c \
     src/core/lib/iomgr/tcp_uv.c \
     src/core/lib/iomgr/tcp_windows.c \
@@ -3303,16 +3304,17 @@ LIBGRPC_CRONET_SRC = \
     src/core/lib/iomgr/socket_utils_uv.c \
     src/core/lib/iomgr/socket_utils_windows.c \
     src/core/lib/iomgr/socket_windows.c \
+    src/core/lib/iomgr/tcp_client_custom.c \
     src/core/lib/iomgr/tcp_client_posix.c \
-    src/core/lib/iomgr/tcp_client_uv.c \
     src/core/lib/iomgr/tcp_client_windows.c \
     src/core/lib/iomgr/tcp_custom.c \
     src/core/lib/iomgr/tcp_posix.c \
+    src/core/lib/iomgr/tcp_server.c \
+    src/core/lib/iomgr/tcp_server_custom.c \
     src/core/lib/iomgr/tcp_server_posix.c \
     src/core/lib/iomgr/tcp_server_utils_posix_common.c \
     src/core/lib/iomgr/tcp_server_utils_posix_ifaddrs.c \
     src/core/lib/iomgr/tcp_server_utils_posix_noifaddrs.c \
-    src/core/lib/iomgr/tcp_server_uv.c \
     src/core/lib/iomgr/tcp_server_windows.c \
     src/core/lib/iomgr/tcp_uv.c \
     src/core/lib/iomgr/tcp_windows.c \
@@ -3617,16 +3619,17 @@ LIBGRPC_TEST_UTIL_SRC = \
     src/core/lib/iomgr/socket_utils_uv.c \
     src/core/lib/iomgr/socket_utils_windows.c \
     src/core/lib/iomgr/socket_windows.c \
+    src/core/lib/iomgr/tcp_client_custom.c \
     src/core/lib/iomgr/tcp_client_posix.c \
-    src/core/lib/iomgr/tcp_client_uv.c \
     src/core/lib/iomgr/tcp_client_windows.c \
     src/core/lib/iomgr/tcp_custom.c \
     src/core/lib/iomgr/tcp_posix.c \
+    src/core/lib/iomgr/tcp_server.c \
+    src/core/lib/iomgr/tcp_server_custom.c \
     src/core/lib/iomgr/tcp_server_posix.c \
     src/core/lib/iomgr/tcp_server_utils_posix_common.c \
     src/core/lib/iomgr/tcp_server_utils_posix_ifaddrs.c \
     src/core/lib/iomgr/tcp_server_utils_posix_noifaddrs.c \
-    src/core/lib/iomgr/tcp_server_uv.c \
     src/core/lib/iomgr/tcp_server_windows.c \
     src/core/lib/iomgr/tcp_uv.c \
     src/core/lib/iomgr/tcp_windows.c \
@@ -3868,16 +3871,17 @@ LIBGRPC_TEST_UTIL_UNSECURE_SRC = \
     src/core/lib/iomgr/socket_utils_uv.c \
     src/core/lib/iomgr/socket_utils_windows.c \
     src/core/lib/iomgr/socket_windows.c \
+    src/core/lib/iomgr/tcp_client_custom.c \
     src/core/lib/iomgr/tcp_client_posix.c \
-    src/core/lib/iomgr/tcp_client_uv.c \
     src/core/lib/iomgr/tcp_client_windows.c \
     src/core/lib/iomgr/tcp_custom.c \
     src/core/lib/iomgr/tcp_posix.c \
+    src/core/lib/iomgr/tcp_server.c \
+    src/core/lib/iomgr/tcp_server_custom.c \
     src/core/lib/iomgr/tcp_server_posix.c \
     src/core/lib/iomgr/tcp_server_utils_posix_common.c \
     src/core/lib/iomgr/tcp_server_utils_posix_ifaddrs.c \
     src/core/lib/iomgr/tcp_server_utils_posix_noifaddrs.c \
-    src/core/lib/iomgr/tcp_server_uv.c \
     src/core/lib/iomgr/tcp_server_windows.c \
     src/core/lib/iomgr/tcp_uv.c \
     src/core/lib/iomgr/tcp_windows.c \
@@ -4092,16 +4096,17 @@ LIBGRPC_UNSECURE_SRC = \
     src/core/lib/iomgr/socket_utils_uv.c \
     src/core/lib/iomgr/socket_utils_windows.c \
     src/core/lib/iomgr/socket_windows.c \
+    src/core/lib/iomgr/tcp_client_custom.c \
     src/core/lib/iomgr/tcp_client_posix.c \
-    src/core/lib/iomgr/tcp_client_uv.c \
     src/core/lib/iomgr/tcp_client_windows.c \
     src/core/lib/iomgr/tcp_custom.c \
     src/core/lib/iomgr/tcp_posix.c \
+    src/core/lib/iomgr/tcp_server.c \
+    src/core/lib/iomgr/tcp_server_custom.c \
     src/core/lib/iomgr/tcp_server_posix.c \
     src/core/lib/iomgr/tcp_server_utils_posix_common.c \
     src/core/lib/iomgr/tcp_server_utils_posix_ifaddrs.c \
     src/core/lib/iomgr/tcp_server_utils_posix_noifaddrs.c \
-    src/core/lib/iomgr/tcp_server_uv.c \
     src/core/lib/iomgr/tcp_server_windows.c \
     src/core/lib/iomgr/tcp_uv.c \
     src/core/lib/iomgr/tcp_windows.c \
@@ -4773,16 +4778,17 @@ LIBGRPC++_CRONET_SRC = \
     src/core/lib/iomgr/socket_utils_uv.c \
     src/core/lib/iomgr/socket_utils_windows.c \
     src/core/lib/iomgr/socket_windows.c \
+    src/core/lib/iomgr/tcp_client_custom.c \
     src/core/lib/iomgr/tcp_client_posix.c \
-    src/core/lib/iomgr/tcp_client_uv.c \
     src/core/lib/iomgr/tcp_client_windows.c \
     src/core/lib/iomgr/tcp_custom.c \
     src/core/lib/iomgr/tcp_posix.c \
+    src/core/lib/iomgr/tcp_server.c \
+    src/core/lib/iomgr/tcp_server_custom.c \
     src/core/lib/iomgr/tcp_server_posix.c \
     src/core/lib/iomgr/tcp_server_utils_posix_common.c \
     src/core/lib/iomgr/tcp_server_utils_posix_ifaddrs.c \
     src/core/lib/iomgr/tcp_server_utils_posix_noifaddrs.c \
-    src/core/lib/iomgr/tcp_server_uv.c \
     src/core/lib/iomgr/tcp_server_windows.c \
     src/core/lib/iomgr/tcp_uv.c \
     src/core/lib/iomgr/tcp_windows.c \

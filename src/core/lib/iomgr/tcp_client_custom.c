@@ -18,8 +18,6 @@
 
 #include "src/core/lib/iomgr/port.h"
 
-#ifdef GRPC_UV
-
 #include <string.h>
 #include <uv.h>
 
@@ -34,13 +32,12 @@
 #include "src/core/lib/iomgr/timer.h"
 
 extern grpc_tracer_flag grpc_tcp_trace;
-extern grpc_socket_vtable uv_socket_vtable;
+extern grpc_socket_vtable* grpc_custom_socket_vtable;
 
 typedef struct grpc_uv_tcp_connect {
-  uv_connect_t connect_req;
+  grpc_socket_wrapper* socket;
   grpc_timer alarm;
   grpc_closure on_alarm;
-  uv_tcp_t *tcp_handle;
   grpc_closure *closure;
   grpc_endpoint **endpoint;
   int refs;
@@ -55,12 +52,11 @@ static void uv_tcp_connect_cleanup(grpc_exec_ctx *exec_ctx,
   gpr_free(connect);
 }
 
-static void tcp_close_callback(uv_handle_t *handle) { gpr_free(handle); }
-
 static void uv_tc_on_alarm(grpc_exec_ctx *exec_ctx, void *acp,
                            grpc_error *error) {
   int done;
-  grpc_uv_tcp_connect *connect = acp;
+  grpc_socket_wrapper* socket = acp;
+  grpc_uv_tcp_connect *connect = socket->connector;
   if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     const char *str = grpc_error_string(error);
     gpr_log(GPR_DEBUG, "CLIENT_CONNECT: %s: on_alarm: error=%s",
@@ -70,7 +66,7 @@ static void uv_tc_on_alarm(grpc_exec_ctx *exec_ctx, void *acp,
     /* error == NONE implies that the timer ran out, and wasn't cancelled. If
        it was cancelled, then the handler that cancelled it also should close
        the handle, if applicable */
-    uv_close((uv_handle_t *)connect->tcp_handle, tcp_close_callback);
+    grpc_custom_socket_vtable->close(socket);
   }
   done = (--connect->refs == 0);
   if (done) {
@@ -78,34 +74,14 @@ static void uv_tc_on_alarm(grpc_exec_ctx *exec_ctx, void *acp,
   }
 }
 
-static void uv_tc_on_connect(uv_connect_t *req, int status) {
-  grpc_uv_tcp_connect *connect = req->data;
+void grpc_custom_connect_callback(grpc_socket_wrapper* socket, grpc_error* error) {
+  grpc_uv_tcp_connect *connect = socket->connector;
   grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
-  grpc_error *error = GRPC_ERROR_NONE;
   int done;
   grpc_closure *closure = connect->closure;
   grpc_timer_cancel(&exec_ctx, &connect->alarm);
-  if (status == 0) {
-    *connect->endpoint = custom_tcp_create(
-        connect->tcp_handle, &uv_socket_vtable, connect->resource_quota, connect->addr_name);
-  } else {
-    error = GRPC_ERROR_CREATE_FROM_STATIC_STRING(
-        "Failed to connect to remote host");
-    error = grpc_error_set_int(error, GRPC_ERROR_INT_ERRNO, -status);
-    error =
-        grpc_error_set_str(error, GRPC_ERROR_STR_OS_ERROR,
-                           grpc_slice_from_static_string(uv_strerror(status)));
-    if (status == UV_ECANCELED) {
-      error =
-          grpc_error_set_str(error, GRPC_ERROR_STR_OS_ERROR,
-                             grpc_slice_from_static_string("Timeout occurred"));
-      // This should only happen if the handle is already closed
-    } else {
-      error = grpc_error_set_str(
-          error, GRPC_ERROR_STR_OS_ERROR,
-          grpc_slice_from_static_string(uv_strerror(status)));
-      uv_close((uv_handle_t *)connect->tcp_handle, tcp_close_callback);
-    }
+  if (error == GRPC_ERROR_NONE) {
+    *connect->endpoint = custom_tcp_endpoint_create(socket, connect->resource_quota, connect->addr_name);
   }
   done = (--connect->refs == 0);
   if (done) {
@@ -139,26 +115,23 @@ static void tcp_client_connect_impl(grpc_exec_ctx *exec_ctx,
     }
   }
 
+  grpc_socket_wrapper* socket = gpr_malloc(sizeof(grpc_socket_wrapper));
+  grpc_custom_socket_vtable->init(socket, 0);
   connect = gpr_zalloc(sizeof(grpc_uv_tcp_connect));
   connect->closure = closure;
   connect->endpoint = ep;
-  connect->tcp_handle = gpr_malloc(sizeof(uv_tcp_t));
   connect->addr_name = grpc_sockaddr_to_uri(resolved_addr);
   connect->resource_quota = resource_quota;
-  uv_tcp_init(uv_default_loop(), connect->tcp_handle);
-  connect->connect_req.data = connect;
+  socket->connector = connect;
+
   connect->refs = 1;
 
   if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     gpr_log(GPR_DEBUG, "CLIENT_CONNECT: %s: asynchronously connecting",
             connect->addr_name);
   }
-
-  // TODO(murgatroid99): figure out what the return value here means
-  uv_tcp_connect(&connect->connect_req, connect->tcp_handle,
-                 (const struct sockaddr *)resolved_addr->addr,
-                 uv_tc_on_connect);
-  GRPC_CLOSURE_INIT(&connect->on_alarm, uv_tc_on_alarm, connect,
+  grpc_custom_socket_vtable->connect(socket, (const struct sockaddr *)resolved_addr->addr, resolved_addr->len);
+  GRPC_CLOSURE_INIT(&connect->on_alarm, uv_tc_on_alarm, socket,
                     grpc_schedule_on_exec_ctx);
   grpc_timer_init(exec_ctx, &connect->alarm,
                   gpr_convert_clock_type(deadline, GPR_CLOCK_MONOTONIC),
@@ -182,4 +155,3 @@ void grpc_tcp_client_connect(grpc_exec_ctx *exec_ctx, grpc_closure *closure,
                                channel_args, addr, deadline);
 }
 
-#endif /* GRPC_UV */
