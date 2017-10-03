@@ -123,6 +123,8 @@ static void tcp_connect(grpc_exec_ctx *exec_ctx,
   connect->addr_name = grpc_sockaddr_to_uri(resolved_addr);
   connect->resource_quota = resource_quota;
   socket->connector = connect;
+  socket->endpoint = NULL;
+  socket->listener = NULL;
 
   connect->refs = 1;
 
