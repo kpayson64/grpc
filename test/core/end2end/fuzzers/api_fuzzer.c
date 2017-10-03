@@ -433,12 +433,6 @@ grpc_ares_request *my_dns_lookup_ares(
 ////////////////////////////////////////////////////////////////////////////////
 // client connection
 
-// defined in tcp_client_posix.c
-extern void (*grpc_tcp_client_connect_impl)(
-    grpc_exec_ctx *exec_ctx, grpc_closure *closure, grpc_endpoint **ep,
-    grpc_pollset_set *interested_parties, const grpc_channel_args *channel_args,
-    const grpc_resolved_address *addr, gpr_timespec deadline);
-
 static void sched_connect(grpc_exec_ctx *exec_ctx, grpc_closure *closure,
                           grpc_endpoint **ep, gpr_timespec deadline);
 
@@ -500,6 +494,8 @@ static void my_tcp_client_connect(grpc_exec_ctx *exec_ctx,
                                   gpr_timespec deadline) {
   sched_connect(exec_ctx, closure, ep, deadline);
 }
+
+grpc_tcp_client_vtable fuzz_tcp_client_vtable = {my_tcp_client_connect};
 
 ////////////////////////////////////////////////////////////////////////////////
 // test driver
@@ -736,7 +732,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   if (squelch && grpc_trace_fuzzer == NULL) gpr_set_log_function(dont_log);
   gpr_free(grpc_trace_fuzzer);
   input_stream inp = {data, data + size};
-  grpc_tcp_client_connect_impl = my_tcp_client_connect;
+  grpc_set_tcp_client_impl(&fuzz_tcp_client_vtable);
   gpr_now_impl = now_impl;
   grpc_init();
   grpc_timer_manager_set_threading(false);

@@ -238,7 +238,7 @@ finish:
   GRPC_CLOSURE_SCHED(exec_ctx, closure, error);
 }
 
-static void tcp_client_connect_impl(grpc_exec_ctx *exec_ctx,
+static void tcp_connect(grpc_exec_ctx *exec_ctx,
                                     grpc_closure *closure, grpc_endpoint **ep,
                                     grpc_pollset_set *interested_parties,
                                     const grpc_channel_args *channel_args,
@@ -335,21 +335,9 @@ done:
   gpr_free(addr_str);
 }
 
-// overridden by api_fuzzer.c
-void (*grpc_tcp_client_connect_impl)(
-    grpc_exec_ctx *exec_ctx, grpc_closure *closure, grpc_endpoint **ep,
-    grpc_pollset_set *interested_parties, const grpc_channel_args *channel_args,
-    const grpc_resolved_address *addr,
-    gpr_timespec deadline) = tcp_client_connect_impl;
+grpc_tcp_client_vtable posix_tcp_client_vtable = {tcp_connect};
 
-void grpc_tcp_client_connect(grpc_exec_ctx *exec_ctx, grpc_closure *closure,
-                             grpc_endpoint **ep,
-                             grpc_pollset_set *interested_parties,
-                             const grpc_channel_args *channel_args,
-                             const grpc_resolved_address *addr,
-                             gpr_timespec deadline) {
-  grpc_tcp_client_connect_impl(exec_ctx, closure, ep, interested_parties,
-                               channel_args, addr, deadline);
-}
+grpc_tcp_client_vtable* default_tcp_client_vtable = &posix_tcp_client_vtable;
+
 
 #endif

@@ -19,6 +19,7 @@
 #include "src/core/lib/iomgr/tcp_server.h"
 
 
+extern grpc_tcp_server_vtable* default_tcp_server_vtable;
 static grpc_tcp_server_vtable* server_vtable = NULL;
 
 grpc_error *grpc_tcp_server_create(grpc_exec_ctx *exec_ctx,
@@ -66,3 +67,14 @@ void grpc_tcp_server_shutdown_listeners(grpc_exec_ctx *exec_ctx,
                                         grpc_tcp_server *s) {
   server_vtable->shutdown_listeners(exec_ctx, s);
 }
+
+void grpc_tcp_server_init() {
+  if (server_vtable == NULL) {
+    server_vtable = default_tcp_server_vtable;
+  }
+}
+
+void grpc_set_tcp_server_impl(grpc_tcp_server_vtable* impl) {
+  server_vtable = impl;
+}
+

@@ -120,4 +120,8 @@ void grpc_tcp_server_unref(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s);
 void grpc_tcp_server_shutdown_listeners(grpc_exec_ctx *exec_ctx,
                                         grpc_tcp_server *s);
 
+void grpc_tcp_server_init();
+
+void grpc_set_tcp_server_impl(grpc_tcp_server_vtable* impl);
+
 #endif /* GRPC_CORE_LIB_IOMGR_TCP_SERVER_H */

@@ -524,6 +524,7 @@ Pod::Spec.new do |s|
                       'src/core/lib/iomgr/socket_utils_uv.c',
                       'src/core/lib/iomgr/socket_utils_windows.c',
                       'src/core/lib/iomgr/socket_windows.c',
+                      'src/core/lib/iomgr/tcp_client.c',
                       'src/core/lib/iomgr/tcp_client_custom.c',
                       'src/core/lib/iomgr/tcp_client_posix.c',
                       'src/core/lib/iomgr/tcp_client_windows.c',

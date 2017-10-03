@@ -19,7 +19,6 @@
 #include "src/core/lib/iomgr/port.h"
 
 #include <string.h>
-#include <uv.h>
 
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
@@ -81,6 +80,7 @@ void grpc_custom_connect_callback(grpc_socket_wrapper* socket, grpc_error* error
   grpc_closure *closure = connect->closure;
   grpc_timer_cancel(&exec_ctx, &connect->alarm);
   if (error == GRPC_ERROR_NONE) {
+    gpr_log(GPR_ERROR, "CUSTOM CONNECT CALLBACK");
     *connect->endpoint = custom_tcp_endpoint_create(socket, connect->resource_quota, connect->addr_name);
   }
   done = (--connect->refs == 0);
@@ -92,7 +92,7 @@ void grpc_custom_connect_callback(grpc_socket_wrapper* socket, grpc_error* error
   grpc_exec_ctx_finish(&exec_ctx);
 }
 
-static void tcp_client_connect_impl(grpc_exec_ctx *exec_ctx,
+static void tcp_connect(grpc_exec_ctx *exec_ctx,
                                     grpc_closure *closure, grpc_endpoint **ep,
                                     grpc_pollset_set *interested_parties,
                                     const grpc_channel_args *channel_args,
@@ -138,20 +138,9 @@ static void tcp_client_connect_impl(grpc_exec_ctx *exec_ctx,
                   &connect->on_alarm, gpr_now(GPR_CLOCK_MONOTONIC));
 }
 
-// overridden by api_fuzzer.c
-void (*grpc_tcp_client_connect_impl)(
-    grpc_exec_ctx *exec_ctx, grpc_closure *closure, grpc_endpoint **ep,
-    grpc_pollset_set *interested_parties, const grpc_channel_args *channel_args,
-    const grpc_resolved_address *addr,
-    gpr_timespec deadline) = tcp_client_connect_impl;
+grpc_tcp_client_vtable custom_tcp_client_vtable = {tcp_connect};
 
-void grpc_tcp_client_connect(grpc_exec_ctx *exec_ctx, grpc_closure *closure,
-                             grpc_endpoint **ep,
-                             grpc_pollset_set *interested_parties,
-                             const grpc_channel_args *channel_args,
-                             const grpc_resolved_address *addr,
-                             gpr_timespec deadline) {
-  grpc_tcp_client_connect_impl(exec_ctx, closure, ep, interested_parties,
-                               channel_args, addr, deadline);
-}
+#ifdef GRPC_UV_TEST
+grpc_tcp_client_vtable* default_tcp_client_vtable = &custom_tcp_client_vtable;
+#endif
 

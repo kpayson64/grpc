@@ -32,12 +32,22 @@
 #include "src/core/lib/iomgr/network_status_tracker.h"
 #include "src/core/lib/iomgr/resource_quota.h"
 #include "src/core/lib/iomgr/tcp_custom.h"
+#include "src/core/lib/iomgr/tcp_client.h"
+#include "src/core/lib/iomgr/tcp_server.h"
 #include "src/core/lib/slice/slice_internal.h"
 #include "src/core/lib/slice/slice_string_helpers.h"
 
 #define GRPC_TRACER_ON_TCP_TRACE 0
 
 grpc_socket_vtable* grpc_custom_socket_vtable = NULL;
+extern grpc_tcp_server_vtable custom_tcp_server_vtable;
+extern grpc_tcp_client_vtable custom_tcp_client_vtable;
+
+void grpc_custom_endpoint_init(grpc_socket_vtable* impl) {
+  grpc_custom_socket_vtable = impl;
+  grpc_set_tcp_client_impl(&custom_tcp_client_vtable);
+  grpc_set_tcp_server_impl(&custom_tcp_server_vtable);
+}
 
 typedef struct {
   grpc_endpoint base;

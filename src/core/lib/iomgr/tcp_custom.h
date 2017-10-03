@@ -45,7 +45,6 @@ typedef struct grpc_uv_tcp_connect grpc_uv_tcp_connect;
 typedef struct grpc_socket_wrapper {
   // Implementation defined
   void* socket;
-  grpc_socket_vtable* vtable;
 
   // Set if this socket is a connect endpoint, or null otherwise
   grpc_endpoint* endpoint;
@@ -59,7 +58,7 @@ typedef struct grpc_socket_wrapper {
 
 
 typedef struct grpc_socket_vtable {
-  void (*init)(grpc_socket_wrapper* s, int family);
+  grpc_error* (*init)(grpc_socket_wrapper* s, int domain);
   void (*connect)(grpc_socket_wrapper* s, const struct sockaddr* addr, size_t len);
   void (*destroy)(grpc_socket_wrapper* s);
   void (*shutdown)(grpc_socket_wrapper* s);
@@ -75,6 +74,9 @@ typedef struct grpc_socket_vtable {
   grpc_error* (*accept)(grpc_socket_wrapper* s);
 } grpc_socket_vtable;
 
+void grpc_custom_endpoint_init(grpc_socket_vtable* impl);
+
+
 grpc_endpoint *custom_tcp_endpoint_create(grpc_socket_wrapper *socket,
                                           grpc_resource_quota *resource_quota,
                                           char *peer_string);
@@ -82,7 +84,7 @@ grpc_endpoint *custom_tcp_endpoint_create(grpc_socket_wrapper *socket,
 void grpc_custom_connect_callback(grpc_socket_wrapper* s, grpc_error* error);
 void grpc_custom_write_callback(grpc_socket_wrapper* s, size_t nwritten, grpc_error* error);
 void grpc_custom_read_callback(grpc_socket_wrapper* s, size_t nread, grpc_error* error);
-void grpc_custom_accept_callback(grpc_socket_wrapper* s, grpc_socket_wrapper* new_socket, grpc_error* error);
+void grpc_custom_accept_callback(grpc_socket_wrapper* s, grpc_socket_wrapper* client, grpc_error* error);
 void grpc_custom_close_callback(grpc_socket_wrapper* s);
 
 void grpc_custom_close_listener_callback(grpc_tcp_listener* listener);

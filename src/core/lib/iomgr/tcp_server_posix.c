@@ -565,4 +565,6 @@ grpc_tcp_server_vtable posix_tcp_server_vtable = {
 tcp_server_create, tcp_server_start, tcp_server_add_port, tcp_server_port_fd_count, tcp_server_port_fd,
 tcp_server_ref, tcp_server_shutdown_starting_add, tcp_server_unref,
 tcp_server_shutdown_listeners};
+
+grpc_tcp_server_vtable* default_tcp_server_vtable = &posix_tcp_server_vtable;
 #endif
