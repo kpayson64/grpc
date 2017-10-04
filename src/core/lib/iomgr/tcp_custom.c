@@ -72,8 +72,7 @@ typedef struct {
 } custom_tcp_endpoint;
 
 static void tcp_free(grpc_exec_ctx *exec_ctx, grpc_socket_wrapper *s) {
-  custom_tcp_endpoint* tcp = (custom_tcp_endpoint*) s;
-  grpc_custom_socket_vtable->destroy(s);
+  custom_tcp_endpoint* tcp = (custom_tcp_endpoint*) s->endpoint;
   grpc_slice_unref_internal(exec_ctx, tcp->read_slice);
   grpc_resource_user_unref(exec_ctx, tcp->resource_user);
   gpr_free(tcp->peer_string);
@@ -296,6 +295,18 @@ static void custom_destroy(grpc_exec_ctx *exec_ctx, grpc_endpoint *ep) {
   grpc_network_status_unregister_endpoint(ep);
   custom_tcp_endpoint *tcp = (custom_tcp_endpoint *)ep;
   grpc_custom_socket_vtable->close(tcp->socket);
+}
+
+void grpc_custom_close_callback(grpc_socket_wrapper* s) {
+  grpc_custom_close_server_callback(s->listener);
+  if (s->endpoint) {
+    custom_tcp_endpoint *tcp = (custom_tcp_endpoint *)s->endpoint;
+    grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
+    TCP_UNREF(&exec_ctx, tcp, "destroy");
+    grpc_exec_ctx_finish(&exec_ctx);
+  }
+  grpc_custom_socket_vtable->destroy(s);
+  gpr_free(s);
 }
 
 static char *custom_get_peer(grpc_endpoint *ep) {

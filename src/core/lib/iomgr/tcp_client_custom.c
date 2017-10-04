@@ -33,7 +33,7 @@
 extern grpc_tracer_flag grpc_tcp_trace;
 extern grpc_socket_vtable* grpc_custom_socket_vtable;
 
-typedef struct grpc_uv_tcp_connect {
+struct grpc_uv_tcp_connect {
   grpc_socket_wrapper* socket;
   grpc_timer alarm;
   grpc_closure on_alarm;
@@ -42,7 +42,7 @@ typedef struct grpc_uv_tcp_connect {
   int refs;
   char *addr_name;
   grpc_resource_quota *resource_quota;
-} grpc_uv_tcp_connect;
+};
 
 static void uv_tcp_connect_cleanup(grpc_exec_ctx *exec_ctx,
                                    grpc_uv_tcp_connect *connect) {
@@ -80,7 +80,6 @@ void grpc_custom_connect_callback(grpc_socket_wrapper* socket, grpc_error* error
   grpc_closure *closure = connect->closure;
   grpc_timer_cancel(&exec_ctx, &connect->alarm);
   if (error == GRPC_ERROR_NONE) {
-    gpr_log(GPR_ERROR, "CUSTOM CONNECT CALLBACK");
     *connect->endpoint = custom_tcp_endpoint_create(socket, connect->resource_quota, connect->addr_name);
   }
   done = (--connect->refs == 0);
@@ -126,7 +125,7 @@ static void tcp_connect(grpc_exec_ctx *exec_ctx,
   socket->endpoint = NULL;
   socket->listener = NULL;
 
-  connect->refs = 1;
+  connect->refs = 2;
 
   if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     gpr_log(GPR_DEBUG, "CLIENT_CONNECT: %s: asynchronously connecting",

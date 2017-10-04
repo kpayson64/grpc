@@ -128,15 +128,13 @@ static void finish_shutdown(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s) {
     grpc_tcp_listener *sp = s->head;
     s->head = sp->next;
     sp->next = NULL;
-    gpr_free(sp->socket);
     gpr_free(sp);
   }
   grpc_resource_quota_unref_internal(exec_ctx, s->resource_quota);
   gpr_free(s);
 }
 
-void grpc_custom_close_callback(grpc_socket_wrapper* s) {
-  grpc_tcp_listener *sp = s->listener;
+void grpc_custom_close_server_callback(grpc_tcp_listener *sp) {
   if (sp) {
     grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
     sp->server->open_ports--;
@@ -230,7 +228,6 @@ void grpc_custom_accept_callback(grpc_socket_wrapper* socket, grpc_socket_wrappe
   grpc_tcp_listener *sp = socket->listener;
   grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
 
-  gpr_log(GPR_ERROR, "CALLBACK");
   if (error != GRPC_ERROR_NONE) {
     grpc_custom_socket_vtable->close(socket);
   } else {
@@ -357,6 +354,7 @@ static grpc_error *tcp_server_add_port(grpc_tcp_server *s,
   socket = gpr_malloc(sizeof(grpc_socket_wrapper));
   socket->endpoint = NULL;
   socket->listener = NULL;
+  socket->connector = NULL;
   grpc_custom_socket_vtable->init(socket, family);
 
   if(error == GRPC_ERROR_NONE) {

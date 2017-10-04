@@ -61,7 +61,7 @@ typedef struct {
 static void uv_socket_destroy(grpc_socket_wrapper* sw) {
   uv_socket* s = sw->socket;
   gpr_free(s->handle);
-  gpr_free(sw);
+  gpr_free(s);
 }
 
 static void alloc_uv_buf(uv_handle_t *handle, size_t suggested_size,
@@ -166,6 +166,8 @@ static grpc_error* uv_socket_init(grpc_socket_wrapper* s, int domain) {
   socket->write_buffers = NULL;
   socket->write_len = 0;
   socket->read_len = 0;
+  socket->pending_connections = false;
+  socket->accept_ready = false;
   uv_tcp_nodelay(socket->handle, 1);
 #ifndef GRPC_UV_TCP_HOLD_LOOP
   uv_unref((uv_handle_t *)socket->handle);
@@ -213,7 +215,6 @@ static grpc_error* uv_socket_getsockname(grpc_socket_wrapper* socket, const stru
 static void uv_on_connect(uv_stream_t *server, int status) {
   grpc_socket_wrapper* socket = (grpc_socket_wrapper *)server->data;
   uv_socket* s = (uv_socket*)socket->socket;
-  gpr_log(GPR_ERROR, "ON CONNECT CALLED!");
   if (status < 0) {
     switch (status) {
       case UV_EINTR:
@@ -230,10 +231,10 @@ static void uv_on_connect(uv_stream_t *server, int status) {
     grpc_socket_wrapper* client = gpr_malloc(sizeof(grpc_socket_wrapper));
     client->endpoint = NULL;
     client->listener = NULL;
+    client->connector = NULL;
     uv_socket_init(client, 0);
     // UV documentation says this is guaranteed to succeed
-    uv_accept((uv_stream_t *)s->handle, (uv_stream_t *)((uv_socket*)client->socket)->handle);
-    gpr_log(GPR_ERROR, "%p PTR",  ((uv_socket*)client->socket)->handle);
+    GPR_ASSERT(uv_accept((uv_stream_t *)s->handle, (uv_stream_t *)((uv_socket*)client->socket)->handle) == 0);
     grpc_custom_accept_callback(socket, client, GRPC_ERROR_NONE);
   } else {
     s->pending_connections = true;
@@ -243,14 +244,14 @@ static void uv_on_connect(uv_stream_t *server, int status) {
 grpc_error* uv_socket_accept(grpc_socket_wrapper* socket) {
   uv_socket* s = (uv_socket*)socket->socket;
   s->accept_ready = true;
-  gpr_log(GPR_ERROR, "HAS PENDING CONNECTIONS");
   if (s->pending_connections) {
     s->pending_connections = false;
     grpc_socket_wrapper* client = gpr_malloc(sizeof(grpc_socket_wrapper));
     client->endpoint = NULL;
     client->listener = NULL;
+    client->connector = NULL;
     uv_socket_init(client, 0);
-    uv_accept((uv_stream_t *)s->handle, (uv_stream_t *)((uv_socket*)client->socket)->handle);
+    GPR_ASSERT(uv_accept((uv_stream_t *)s->handle, (uv_stream_t *)((uv_socket*)client->socket)->handle));
     grpc_custom_accept_callback(socket, client, GRPC_ERROR_NONE);
   }
   return GRPC_ERROR_NONE;

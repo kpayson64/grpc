@@ -38,7 +38,6 @@ extern grpc_tracer_flag grpc_tcp_trace;
 
 #define GRPC_TCP_DEFAULT_READ_SLICE_SIZE 8192
 
-typedef struct grpc_socket_vtable grpc_socket_vtable;
 typedef struct grpc_tcp_listener grpc_tcp_listener;
 typedef struct grpc_uv_tcp_connect grpc_uv_tcp_connect;
 
@@ -87,6 +86,6 @@ void grpc_custom_read_callback(grpc_socket_wrapper* s, size_t nread, grpc_error*
 void grpc_custom_accept_callback(grpc_socket_wrapper* s, grpc_socket_wrapper* client, grpc_error* error);
 void grpc_custom_close_callback(grpc_socket_wrapper* s);
 
-void grpc_custom_close_listener_callback(grpc_tcp_listener* listener);
+void grpc_custom_close_server_callback(grpc_tcp_listener* listener);
 
 #endif /* GRPC_CORE_LIB_IOMGR_TCP_UV_H */
