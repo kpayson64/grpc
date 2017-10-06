@@ -34,6 +34,27 @@
 
 typedef struct grpc_timer grpc_timer;
 
+typedef enum {
+  GRPC_TIMERS_NOT_CHECKED,
+  GRPC_TIMERS_CHECKED_AND_EMPTY,
+  GRPC_TIMERS_FIRED,
+} grpc_timer_check_result;
+
+typedef struct grpc_timer_vtable {
+  void (*init)(grpc_exec_ctx *exec_ctx, grpc_timer *timer,
+                     gpr_timespec deadline, grpc_closure *closure,
+                     gpr_timespec now);
+  void (*cancel)(grpc_exec_ctx *exec_ctx, grpc_timer *timer);
+
+  /* Internal API */
+  grpc_timer_check_result check(grpc_exec_ctx *exec_ctx,
+                                gpr_timespec now, gpr_timespec *next);
+  void (*list_init)(gpr_timespec now);
+  void (*list_shutdown)(grpc_exec_ctx *exec_ctx);
+  void (*consume_kick)(void);
+  void (*kick_poller)(void);
+} grpc_timer_vtable;
+
 /* Initialize *timer. When expired or canceled, closure will be called with
    error set to indicate if it expired (GRPC_ERROR_NONE) or was canceled
    (GRPC_ERROR_CANCELLED). timer_cb is guaranteed to be called exactly once, and
@@ -74,11 +95,6 @@ void grpc_timer_cancel(grpc_exec_ctx *exec_ctx, grpc_timer *timer);
 
 /* iomgr internal api for dealing with timers */
 
-typedef enum {
-  GRPC_TIMERS_NOT_CHECKED,
-  GRPC_TIMERS_CHECKED_AND_EMPTY,
-  GRPC_TIMERS_FIRED,
-} grpc_timer_check_result;
 
 /* Check for timers to be run, and run them.
    Return true if timer callbacks were executed.
