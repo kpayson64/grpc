@@ -962,4 +962,5 @@ class Channel(grpc.Channel):
             _common.encode(method), request_serializer, response_deserializer)
 
     def __del__(self):
-        _moot(self._connectivity_state)
+        with self._connectivity_state.lock:
+            del self._connectivity_state.callbacks_and_connectivities[:]
