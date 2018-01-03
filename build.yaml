@@ -261,6 +261,8 @@ filegroups:
   - src/core/lib/iomgr/tcp_uv.c
   - src/core/lib/iomgr/tcp_windows.c
   - src/core/lib/iomgr/time_averaged_stats.c
+  - src/core/lib/iomgr/timer.c
+  - src/core/lib/iomgr/timer_custom.c
   - src/core/lib/iomgr/timer_generic.c
   - src/core/lib/iomgr/timer_heap.c
   - src/core/lib/iomgr/timer_manager.c
@@ -405,10 +407,9 @@ filegroups:
   - src/core/lib/iomgr/tcp_windows.h
   - src/core/lib/iomgr/time_averaged_stats.h
   - src/core/lib/iomgr/timer.h
-  - src/core/lib/iomgr/timer_generic.h
+  - src/core/lib/iomgr/timer_custom.h
   - src/core/lib/iomgr/timer_heap.h
   - src/core/lib/iomgr/timer_manager.h
-  - src/core/lib/iomgr/timer_uv.h
   - src/core/lib/iomgr/udp_server.h
   - src/core/lib/iomgr/unix_sockets_posix.h
   - src/core/lib/iomgr/wakeup_fd_cv.h

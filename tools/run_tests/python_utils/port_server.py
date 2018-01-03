@@ -84,7 +84,7 @@ def can_bind(port, proto):
 
 def refill_pool(max_timeout, req):
   """Scan for ports not marked for being in use"""
-  chk = list(range(1025, 32766))
+  chk = list(range(32000, 32766))
   random.shuffle(chk)
   for i in chk:
     if len(pool) > 100: break
@@ -94,7 +94,7 @@ def refill_pool(max_timeout, req):
         continue
       req.log_message("kill old request %d" % i)
       del in_use[i]
-    if can_bind(i, socket.AF_INET) and can_bind(i, socket.AF_INET6) and not can_connect(i):
+    if can_bind(i, socket.AF_INET) and not can_connect(i):
       req.log_message("found available port %d" % i)
       pool.append(i)
 

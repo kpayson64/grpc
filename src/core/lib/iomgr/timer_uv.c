@@ -26,12 +26,9 @@
 #include "src/core/lib/debug/trace.h"
 #include "src/core/lib/iomgr/iomgr_custom.h"
 #include "src/core/lib/iomgr/timer.h"
+#include "src/core/lib/iomgr/timer_custom.h"
 
 #include <uv.h>
-
-grpc_tracer_flag grpc_timer_trace = GRPC_TRACER_INITIALIZER(false, "timer");
-grpc_tracer_flag grpc_timer_check_trace =
-    GRPC_TRACER_INITIALIZER(false, "timer_check");
 
 static void timer_close_callback(uv_handle_t *handle) { gpr_free(handle); }
 
@@ -42,58 +39,30 @@ static void stop_uv_timer(uv_timer_t *handle) {
 }
 
 void run_expired_timer(uv_timer_t *handle) {
-  grpc_timer *timer = (grpc_timer *)handle->data;
-  grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
-  GRPC_UV_ASSERT_SAME_THREAD();
-  GPR_ASSERT(timer->pending);
-  timer->pending = 0;
-  GRPC_CLOSURE_SCHED(&exec_ctx, timer->closure, GRPC_ERROR_NONE);
+  grpc_timer_wrapper *timer_wrapper = (grpc_timer_wrapper *)handle->data;
   stop_uv_timer(handle);
-  grpc_exec_ctx_finish(&exec_ctx);
+  grpc_custom_timer_callback(timer_wrapper, GRPC_ERROR_NONE);
 }
 
-void grpc_timer_init(grpc_exec_ctx *exec_ctx, grpc_timer *timer,
-                     gpr_timespec deadline, grpc_closure *closure,
-                     gpr_timespec now) {
-  uint64_t timeout;
-  uv_timer_t *uv_timer;
-  GRPC_UV_ASSERT_SAME_THREAD();
-  timer->closure = closure;
-  if (gpr_time_cmp(deadline, now) <= 0) {
-    timer->pending = 0;
-    GRPC_CLOSURE_SCHED(exec_ctx, timer->closure, GRPC_ERROR_NONE);
-    return;
-  }
-  timer->pending = 1;
-  timeout = (uint64_t)gpr_time_to_millis(gpr_time_sub(deadline, now));
+static grpc_error* timer_start(grpc_timer_wrapper* t) {
+  uv_timer_t* uv_timer;
   uv_timer = gpr_malloc(sizeof(uv_timer_t));
   uv_timer_init(uv_default_loop(), uv_timer);
-  uv_timer->data = timer;
-  timer->uv_timer = uv_timer;
-  uv_timer_start(uv_timer, run_expired_timer, timeout, 0);
+  uv_timer->data = t;
+  t->timer = (void*) uv_timer;
+  uv_timer_start(uv_timer, run_expired_timer, t->timeout_ms, 0);
   /* We assume that gRPC timers are only used alongside other active gRPC
      objects, and that there will therefore always be something else keeping
      the uv loop alive whenever there is a timer */
   uv_unref((uv_handle_t *)uv_timer);
+  return GRPC_ERROR_NONE;
 }
 
-void grpc_timer_cancel(grpc_exec_ctx *exec_ctx, grpc_timer *timer) {
-  GRPC_UV_ASSERT_SAME_THREAD();
-  if (timer->pending) {
-    timer->pending = 0;
-    GRPC_CLOSURE_SCHED(exec_ctx, timer->closure, GRPC_ERROR_CANCELLED);
-    stop_uv_timer((uv_timer_t *)timer->uv_timer);
-  }
+static grpc_error* timer_stop(grpc_timer_wrapper* t) {
+  stop_uv_timer((uv_timer_t *)t->timer);
+  return GRPC_ERROR_NONE;
 }
 
-grpc_timer_check_result grpc_timer_check(grpc_exec_ctx *exec_ctx,
-                                         gpr_timespec now, gpr_timespec *next) {
-  return GRPC_TIMERS_NOT_CHECKED;
-}
+grpc_custom_timer_vtable uv_timer_vtable = {timer_start, timer_stop};
 
-void grpc_timer_list_init(gpr_timespec now) {}
-void grpc_timer_list_shutdown(grpc_exec_ctx *exec_ctx) {}
-
-void grpc_timer_consume_kick(void) {}
-
-#endif /* GRPC_UV */
+#endif

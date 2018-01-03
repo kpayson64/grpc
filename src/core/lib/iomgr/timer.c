@@ -16,51 +16,45 @@
  *
  */
 
-#include "src/core/lib/iomgr/pollset.h"
+#include "src/core/lib/iomgr/timer.h"
 
 
+extern grpc_timer_vtable grpc_default_timer_vtable;
 static grpc_timer_vtable* timer_vtable = NULL;
+
+void grpc_set_timer_impl(grpc_timer_vtable* vtable) {
+  timer_vtable = vtable;
+}
+
+void grpc_global_timer_init() {
+  if (timer_vtable == NULL) {
+    timer_vtable = &grpc_default_timer_vtable;
+  }
+}
 
 void grpc_timer_init(grpc_exec_ctx *exec_ctx, grpc_timer *timer,
                      gpr_timespec deadline, grpc_closure *closure,
-                     gpr_timespec now);
-
-
-void grpc_pollset_global_init(void) {
-  if (pollset_vtable == NULL) {
-    pollset_vtable = grpc_default_pollset_vtable();
-  }
-  pollset_vtable->global_init();
+                     gpr_timespec now) {
+  timer_vtable->init(exec_ctx, timer, deadline, closure, now);
 }
 
-void grpc_pollset_global_shutdown(void) {
-  pollset_vtable->global_shutdown();
+void grpc_timer_cancel(grpc_exec_ctx *exec_ctx, grpc_timer *timer) {
+  timer_vtable->cancel(exec_ctx, timer);
 }
 
-void grpc_pollset_init(grpc_pollset *pollset, gpr_mu **mu) {
-  pollset_vtable->init(pollset, mu);
+grpc_timer_check_result grpc_timer_check(grpc_exec_ctx *exec_ctx, gpr_timespec now,
+				         gpr_timespec *next) {
+  return timer_vtable->check(exec_ctx, now, next);
 }
 
-void grpc_pollset_shutdown(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
-                           grpc_closure *closure) {
-  pollset_vtable->shutdown(exec_ctx, pollset, closure);
+void grpc_timer_list_init(gpr_timespec now) {
+  timer_vtable->list_init(now);
 }
 
-void grpc_pollset_destroy(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset) {
-  pollset_vtable->destroy(exec_ctx, pollset);
+void grpc_timer_list_shutdown(grpc_exec_ctx *exec_ctx) {
+  timer_vtable->list_shutdown(exec_ctx);
 }
 
-grpc_error *grpc_pollset_work(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
-                              grpc_pollset_worker **worker, gpr_timespec now,
-                              gpr_timespec deadline) {
-  return pollset_vtable->work(exec_ctx, pollset, worker, now, deadline);
+void grpc_timer_consume_kick() {
+  timer_vtable->consume_kick();
 }
-
-grpc_error *grpc_pollset_kick(grpc_pollset *pollset,
-                              grpc_pollset_worker *specific_worker) {
-  return pollset_vtable->kick(pollset, specific_worker);
-}
-
-size_t grpc_pollset_size(void) { return pollset_vtable->pollset_size(); }
-
-
