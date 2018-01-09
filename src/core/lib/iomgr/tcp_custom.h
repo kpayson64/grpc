@@ -53,6 +53,8 @@ typedef struct grpc_socket_wrapper {
 
   // Set if this socket is connecting or null otherwise
   grpc_uv_tcp_connect* connector;
+
+  int refs;
 } grpc_socket_wrapper;
 
 

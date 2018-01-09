@@ -46,6 +46,11 @@ struct grpc_uv_tcp_connect {
 
 static void uv_tcp_connect_cleanup(grpc_exec_ctx *exec_ctx,
                                    grpc_uv_tcp_connect *connect) {
+  connect->socket->refs--;
+  if (connect->socket->refs == 0) {
+    grpc_custom_socket_vtable->destroy(connect->socket);
+    gpr_free(connect->socket);
+  }
   grpc_resource_quota_unref_internal(exec_ctx, connect->resource_quota);
   gpr_free(connect->addr_name);
   gpr_free(connect);
@@ -115,12 +120,14 @@ static void tcp_connect(grpc_exec_ctx *exec_ctx,
   }
 
   grpc_socket_wrapper* socket = gpr_malloc(sizeof(grpc_socket_wrapper));
+  socket->refs = 2;
   grpc_custom_socket_vtable->init(socket, 0);
   connect = gpr_zalloc(sizeof(grpc_uv_tcp_connect));
   connect->closure = closure;
   connect->endpoint = ep;
   connect->addr_name = grpc_sockaddr_to_uri(resolved_addr);
   connect->resource_quota = resource_quota;
+  connect->socket = socket;
   socket->connector = connect;
   socket->endpoint = NULL;
   socket->listener = NULL;

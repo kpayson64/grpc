@@ -30,17 +30,18 @@
 
 #include <uv.h>
 
-static void timer_close_callback(uv_handle_t *handle) { gpr_free(handle); }
+static void timer_close_callback(uv_handle_t *handle) {
+gpr_free(handle);
+}
 
 static void stop_uv_timer(uv_timer_t *handle) {
   uv_timer_stop(handle);
-  uv_unref((uv_handle_t *)handle);
+  uv_unref((uv_handle_t*)handle);
   uv_close((uv_handle_t *)handle, timer_close_callback);
 }
 
 void run_expired_timer(uv_timer_t *handle) {
   grpc_timer_wrapper *timer_wrapper = (grpc_timer_wrapper *)handle->data;
-  stop_uv_timer(handle);
   grpc_custom_timer_callback(timer_wrapper, GRPC_ERROR_NONE);
 }
 
@@ -51,10 +52,6 @@ static grpc_error* timer_start(grpc_timer_wrapper* t) {
   uv_timer->data = t;
   t->timer = (void*) uv_timer;
   uv_timer_start(uv_timer, run_expired_timer, t->timeout_ms, 0);
-  /* We assume that gRPC timers are only used alongside other active gRPC
-     objects, and that there will therefore always be something else keeping
-     the uv loop alive whenever there is a timer */
-  uv_unref((uv_handle_t *)uv_timer);
   return GRPC_ERROR_NONE;
 }
 

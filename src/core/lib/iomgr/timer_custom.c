@@ -29,14 +29,14 @@
 static grpc_custom_timer_vtable* custom_timer_impl = NULL;
 
 void grpc_custom_timer_callback(grpc_timer_wrapper* t, grpc_error* error) {
-  grpc_timer_wrapper *timer = t;
+  grpc_timer *timer = t->original;
   grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
   GRPC_UV_ASSERT_SAME_THREAD();
   GPR_ASSERT(timer->pending);
   timer->pending = 0;
   GRPC_CLOSURE_SCHED(&exec_ctx, timer->closure, GRPC_ERROR_NONE);
-  custom_timer_impl->stop(t);
   grpc_exec_ctx_finish(&exec_ctx);
+  custom_timer_impl->stop(t);
   gpr_free(t);
 }
 
@@ -44,28 +44,30 @@ static void timer_init(grpc_exec_ctx *exec_ctx, grpc_timer *timer,
                      gpr_timespec deadline, grpc_closure *closure,
                      gpr_timespec now) {
   uint64_t timeout;
-  grpc_timer_wrapper* timer_wrapper = (grpc_timer_wrapper*) gpr_malloc(sizeof(grpc_timer_wrapper));
   GRPC_UV_ASSERT_SAME_THREAD();
-  timer_wrapper->closure = closure;
   if (gpr_time_cmp(deadline, now) <= 0) {
-    timer_wrapper->pending = 0;
-    GRPC_CLOSURE_SCHED(exec_ctx, timer_wrapper->closure, GRPC_ERROR_NONE);
+    GRPC_CLOSURE_SCHED(exec_ctx, closure, GRPC_ERROR_NONE);
+    timer->pending = false;
     return;
   }
-  timer_wrapper->pending = 1;
+  timer->pending = true;
+  timer->closure = closure;
+  grpc_timer_wrapper* timer_wrapper = (grpc_timer_wrapper*) gpr_malloc(sizeof(grpc_timer_wrapper));
   timeout = (uint64_t)gpr_time_to_millis(gpr_time_sub(deadline, now));
   timer_wrapper->timeout_ms = timeout;
   timer->custom_timer = (void*) timer_wrapper;
+  timer_wrapper->original = timer;
   custom_timer_impl->start(timer_wrapper);
 }
 
 static void timer_cancel(grpc_exec_ctx *exec_ctx, grpc_timer *timer) {
   GRPC_UV_ASSERT_SAME_THREAD();
+  grpc_timer_wrapper* tw = (grpc_timer_wrapper*) timer->custom_timer;
   if (timer->pending) {
     timer->pending = 0;
     GRPC_CLOSURE_SCHED(exec_ctx, timer->closure, GRPC_ERROR_CANCELLED);
-    custom_timer_impl->stop((grpc_timer_wrapper*) timer->custom_timer);
-    gpr_free(timer->custom_timer);
+    custom_timer_impl->stop(tw);
+    gpr_free(tw);
   }
 }
 

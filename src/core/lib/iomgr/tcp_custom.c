@@ -300,13 +300,16 @@ static void custom_destroy(grpc_exec_ctx *exec_ctx, grpc_endpoint *ep) {
 void grpc_custom_close_callback(grpc_socket_wrapper* s) {
   grpc_custom_close_server_callback(s->listener);
   if (s->endpoint) {
+    s->refs--;
     custom_tcp_endpoint *tcp = (custom_tcp_endpoint *)s->endpoint;
     grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
     TCP_UNREF(&exec_ctx, tcp, "destroy");
     grpc_exec_ctx_finish(&exec_ctx);
   }
-  grpc_custom_socket_vtable->destroy(s);
-  gpr_free(s);
+  if (s->refs == 0) {
+    grpc_custom_socket_vtable->destroy(s);
+    gpr_free(s);
+  }
 }
 
 static char *custom_get_peer(grpc_endpoint *ep) {
@@ -336,6 +339,7 @@ grpc_endpoint *custom_tcp_endpoint_create(grpc_socket_wrapper* socket,
     gpr_log(GPR_DEBUG, "Creating TCP endpoint %p", tcp);
   }
   memset(tcp, 0, sizeof(custom_tcp_endpoint));
+  socket->refs++;
   socket->endpoint = (grpc_endpoint*) tcp;
   tcp->socket = socket;
   tcp->base.vtable = &vtable;

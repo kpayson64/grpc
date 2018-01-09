@@ -136,12 +136,18 @@ static void finish_shutdown(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s) {
 
 void grpc_custom_close_server_callback(grpc_tcp_listener *sp) {
   if (sp) {
+    grpc_socket_wrapper* socket = sp->socket;
+    socket->refs--;
     grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
     sp->server->open_ports--;
     if (sp->server->open_ports == 0 && sp->server->shutdown) {
       finish_shutdown(&exec_ctx, sp->server);
     }
     grpc_exec_ctx_finish(&exec_ctx);
+    if (socket->refs == 0) {
+      grpc_custom_socket_vtable->destroy(socket);
+      gpr_free(socket);
+    }
   }
 }
 
@@ -352,6 +358,7 @@ static grpc_error *tcp_server_add_port(grpc_tcp_server *s,
 
   family = grpc_sockaddr_get_family(addr);
   socket = gpr_malloc(sizeof(grpc_socket_wrapper));
+  socket->refs = 2; // +1 for the listener
   socket->endpoint = NULL;
   socket->listener = NULL;
   socket->connector = NULL;

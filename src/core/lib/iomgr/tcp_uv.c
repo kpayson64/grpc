@@ -60,6 +60,7 @@ typedef struct {
 
 static void uv_socket_destroy(grpc_socket_wrapper* sw) {
   uv_socket* s = sw->socket;
+  gpr_log(GPR_ERROR, "DESTROYIHNG SOCKET %p", s->handle);
   gpr_free(s->handle);
   gpr_free(s);
 }

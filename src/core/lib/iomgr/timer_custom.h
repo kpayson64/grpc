@@ -40,9 +40,9 @@ typedef struct grpc_timer_wrapper {
   // Implementation defined
   void* timer;
 
-  grpc_closure *closure;
-  int pending;
   uint64_t timeout_ms;
+
+  grpc_timer* original;
 } grpc_timer_wrapper;
 
 
