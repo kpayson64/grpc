@@ -21,9 +21,7 @@
 #ifndef GRPC_CORE_LIB_IOMGR_PORT_H
 #define GRPC_CORE_LIB_IOMGR_PORT_H
 
-#if defined(GRPC_UV)
-// Do nothing
-#elif defined(GPR_MANYLINUX1)
+#if defined(GPR_MANYLINUX1)
 #define GRPC_HAVE_ARPA_NAMESER 1
 #define GRPC_HAVE_IFADDRS 1
 #define GRPC_HAVE_IPV6_RECVPKTINFO 1
@@ -112,9 +110,7 @@
 #error "Platform not recognized"
 #endif
 
-#if defined(GRPC_POSIX_SOCKET) + defined(GRPC_WINSOCK_SOCKET) + \
-        defined(GRPC_CUSTOM_SOCKET) + defined(GRPC_UV) !=       \
-    1
+#if defined(GRPC_POSIX_SOCKET) + defined(GRPC_WINSOCK_SOCKET)  !=  1
 #error Must define exactly one of GRPC_POSIX_SOCKET, GRPC_WINSOCK_SOCKET, GPR_CUSTOM_SOCKET
 #endif
 

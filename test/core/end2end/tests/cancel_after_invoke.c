@@ -40,9 +40,13 @@ static grpc_end2end_test_fixture begin_test(grpc_end2end_test_config config,
   grpc_end2end_test_fixture f;
   gpr_log(GPR_INFO, "Running test: %s/%s/%s [%" PRIdPTR " ops]", test_name,
           config.name, mode.name, test_ops);
+  gpr_log(GPR_ERROR, "RUNNING TEST");
   f = config.create_fixture(client_args, server_args);
+  gpr_log(GPR_ERROR, "CREATE FIXTURE");
   config.init_server(&f, server_args);
+  gpr_log(GPR_ERROR, "INIT SERVER");
   config.init_client(&f, client_args);
+  gpr_log(GPR_ERROR, "INIT CLIENT");
   return f;
 }
 
@@ -96,6 +100,7 @@ static void test_cancel_after_invoke(grpc_end2end_test_config config,
   grpc_call *c;
   grpc_end2end_test_fixture f = begin_test(config, "test_cancel_after_invoke",
                                            mode, test_ops, NULL, NULL);
+  gpr_log(GPR_ERROR, "BEGIN TEST");
   cq_verifier *cqv = cq_verifier_create(f.cq);
   grpc_metadata_array initial_metadata_recv;
   grpc_metadata_array trailing_metadata_recv;
@@ -162,7 +167,9 @@ static void test_cancel_after_invoke(grpc_end2end_test_config config,
   GPR_ASSERT(GRPC_CALL_OK == mode.initiate_cancel(c, NULL));
 
   CQ_EXPECT_COMPLETION(cqv, tag(1), 1);
+  gpr_log(GPR_ERROR, "START COMPLETION");
   cq_verify(cqv);
+  gpr_log(GPR_ERROR, "GOT COMPLETION");
 
   GPR_ASSERT(status == mode.expect_status || status == GRPC_STATUS_INTERNAL);
 
@@ -176,15 +183,16 @@ static void test_cancel_after_invoke(grpc_end2end_test_config config,
   grpc_slice_unref(details);
 
   grpc_call_unref(c);
-
+  gpr_log(GPR_ERROR, "BEFORE DESTRUCTION");
   cq_verifier_destroy(cqv);
   end_test(&f);
   config.tear_down_data(&f);
+  gpr_log(GPR_ERROR, "AFTER DESTRUCTION");
 }
 
 void cancel_after_invoke(grpc_end2end_test_config config) {
   unsigned i, j;
-
+  gpr_log(GPR_ERROR, "CACNEL AFTER INVOKE");
   for (j = 3; j < 6; j++) {
     for (i = 0; i < GPR_ARRAY_SIZE(cancellation_modes); i++) {
       test_cancel_after_invoke(config, cancellation_modes[i], j);

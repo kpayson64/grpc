@@ -413,6 +413,8 @@ void my_resolve_address(grpc_exec_ctx *exec_ctx, const char *addr,
       gpr_now(GPR_CLOCK_MONOTONIC));
 }
 
+static grpc_address_resolver_vtable fuzzer_resolver = {my_resolve_address, NULL};
+
 grpc_ares_request *my_dns_lookup_ares(
     grpc_exec_ctx *exec_ctx, const char *dns_server, const char *addr,
     const char *default_port, grpc_pollset_set *interested_parties,
@@ -741,7 +743,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     grpc_executor_set_threading(&exec_ctx, false);
     grpc_exec_ctx_finish(&exec_ctx);
   }
-  grpc_resolve_address = my_resolve_address;
+  grpc_set_resolver_impl(&fuzzer_resolver);
   grpc_dns_lookup_ares = my_dns_lookup_ares;
 
   GPR_ASSERT(g_channel == NULL);

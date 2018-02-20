@@ -124,10 +124,6 @@ done:
   return error;
 }
 
-grpc_error *(*grpc_blocking_resolve_address)(
-    const char *name, const char *default_port,
-    grpc_resolved_addresses **addresses) = blocking_resolve_address_impl;
-
 /* Callback to be passed to grpc_executor to asynch-ify
  * grpc_blocking_resolve_address */
 static void do_request_thread(grpc_exec_ctx *exec_ctx, void *rp,
@@ -145,7 +141,7 @@ static void do_request_thread(grpc_exec_ctx *exec_ctx, void *rp,
   gpr_free(r);
 }
 
-void grpc_resolved_addresses_destroy(grpc_resolved_addresses *addrs) {
+void resolved_addresses_destroy_impl(grpc_resolved_addresses *addrs) {
   if (addrs != NULL) {
     gpr_free(addrs->addrs);
   }
@@ -167,9 +163,8 @@ static void resolve_address_impl(grpc_exec_ctx *exec_ctx, const char *name,
   GRPC_CLOSURE_SCHED(exec_ctx, &r->request_closure, GRPC_ERROR_NONE);
 }
 
-void (*grpc_resolve_address)(
-    grpc_exec_ctx *exec_ctx, const char *name, const char *default_port,
-    grpc_pollset_set *interested_parties, grpc_closure *on_done,
-    grpc_resolved_addresses **addresses) = resolve_address_impl;
+grpc_resolver_vtable grpc_default_resolver_vtable = {
+  resolve_address_impl, resolve_address_blocking_impl, resolved_addresses_destroy_impl};
+
 
 #endif

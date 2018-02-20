@@ -245,6 +245,8 @@ class CLanguage(object):
       self._use_cmake = False
       self._docker_distro, self._make_options = self._compiler_options(self.args.use_docker,
                                                                        self.args.compiler)
+    if args.iomgr_platform == "gevent":
+      self._make_options += ['EXTRA_CPPFLAGS=-DGRPC_GEVENT_TEST -DGRPC_UV_THREAD_CHECK']
     if args.iomgr_platform == "uv":
       cflags = '-DGRPC_UV -DGRPC_UV_THREAD_CHECK -DGRPC_UV_TEST '
       try:
@@ -298,7 +300,7 @@ class CLanguage(object):
 
         if self.config.build_config in target['exclude_configs']:
           continue
-        if self.args.iomgr_platform in target.get('exclude_iomgrs', []):
+        if 'uv' in target.get('exclude_iomgrs', []):
           continue
         if self.platform == 'windows':
           if self._use_cmake:
@@ -1201,7 +1203,7 @@ argp.add_argument('--compiler',
                   default='default',
                   help='Selects compiler to use. Allowed values depend on the platform and language.')
 argp.add_argument('--iomgr_platform',
-                  choices=['native', 'uv'],
+                  choices=['native', 'uv', 'gevent'],
                   default='native',
                   help='Selects iomgr platform to build on')
 argp.add_argument('--build_only',

@@ -21,7 +21,11 @@
 
 static grpc_pollset_vtable* pollset_vtable = NULL;
 
-void grpc_pollset_global_init(void) {
+void grpc_set_pollset_vtable(grpc_pollset_vtable* vtable) {
+  pollset_vtable = vtable;
+}
+
+void grpc_pollset_global_init() {
   if (pollset_vtable == NULL) {
     pollset_vtable = grpc_default_pollset_vtable();
   }

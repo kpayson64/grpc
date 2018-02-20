@@ -287,5 +287,4 @@ void grpc_pollset_set_del_fd(grpc_exec_ctx *exec_ctx,
   g_event_engine->pollset_set_del_fd(exec_ctx, pollset_set, fd);
 }
 
-
 #endif  // GRPC_POSIX_SOCKET

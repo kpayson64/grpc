@@ -33,6 +33,7 @@
 #include "src/core/lib/iomgr/iomgr_internal.h"
 #include "src/core/lib/iomgr/network_status_tracker.h"
 #include "src/core/lib/iomgr/pollset.h"
+#include "src/core/lib/iomgr/pollset_custom.h"
 #include "src/core/lib/iomgr/pollset_set.h"
 #include "src/core/lib/iomgr/tcp_custom.h"
 #include "src/core/lib/iomgr/tcp_client.h"
@@ -51,6 +52,7 @@ static grpc_iomgr_object g_root_object;
 #ifdef GRPC_UV_TEST
 extern grpc_socket_vtable uv_socket_vtable;
 extern grpc_custom_timer_vtable uv_timer_vtable;
+extern grpc_custom_poller_vtable uv_pollset_vtable;
 #endif
 
 void grpc_iomgr_init(grpc_exec_ctx *exec_ctx) {
@@ -58,9 +60,12 @@ void grpc_iomgr_init(grpc_exec_ctx *exec_ctx) {
   #ifdef GRPC_UV_TEST
   grpc_custom_endpoint_init(&uv_socket_vtable);
   grpc_custom_timer_init(&uv_timer_vtable);
+  grpc_custom_pollset_init(&uv_pollset_vtable);
+  grpc_custom_resolver_init(&uv_socket_vtable);
   #endif
   gpr_mu_init(&g_mu);
   gpr_cv_init(&g_rcv);
+  grpc_global_timer_init();
   grpc_exec_ctx_global_init();
   grpc_executor_init(exec_ctx);
   grpc_timer_list_init(gpr_now(GPR_CLOCK_MONOTONIC));

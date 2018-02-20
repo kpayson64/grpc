@@ -57,6 +57,8 @@ static void my_resolve_address(grpc_exec_ctx *exec_ctx, const char *addr,
   GRPC_CLOSURE_SCHED(exec_ctx, on_done, error);
 }
 
+static grpc_address_resolver_vtable test_resolver = {my_resolve_address, NULL};
+
 static grpc_ares_request *my_dns_lookup_ares(
     grpc_exec_ctx *exec_ctx, const char *dns_server, const char *addr,
     const char *default_port, grpc_pollset_set *interested_parties,
@@ -145,7 +147,7 @@ int main(int argc, char **argv) {
   grpc_init();
   gpr_mu_init(&g_mu);
   g_combiner = grpc_combiner_create();
-  grpc_resolve_address = my_resolve_address;
+  grpc_set_resolver_impl(&test_resolver);
   grpc_dns_lookup_ares = my_dns_lookup_ares;
   grpc_channel_args *result = (grpc_channel_args *)1;
 

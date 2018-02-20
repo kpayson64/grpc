@@ -456,8 +456,9 @@
     <file baseinstalldir="/" name="src/core/lib/iomgr/pollset_set_windows.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/pollset_uv.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/pollset_windows.c" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/resolve_address.c" role="src" />
+    <file baseinstalldir="/" name="src/core/lib/iomgr/resolve_address_custom.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/resolve_address_posix.c" role="src" />
-    <file baseinstalldir="/" name="src/core/lib/iomgr/resolve_address_uv.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/resolve_address_windows.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/resource_quota.c" role="src" />
     <file baseinstalldir="/" name="src/core/lib/iomgr/sockaddr_utils.c" role="src" />

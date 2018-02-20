@@ -45,6 +45,7 @@ typedef struct grpc_pollset_set_vtable {
                        grpc_pollset_set *item);
 } grpc_pollset_set_vtable;
 
+void grpc_custom_pollset_set_init();
 void grpc_set_pollset_set_vtable(grpc_pollset_set_vtable* vtable);
 grpc_pollset_set_vtable* grpc_default_pollset_set_vtable();
 

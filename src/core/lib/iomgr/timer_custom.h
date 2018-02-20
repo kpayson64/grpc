@@ -29,9 +29,7 @@
    otherwise specified.
 */
 
-#include <netinet/in.h>
-
-#include "src/core/lib/debug/trace.h"
+#include "src/core/lib/iomgr/timer.h"
 
 extern grpc_tracer_flag grpc_timer_trace;
 extern grpc_tracer_flag grpc_timer_check_trace;

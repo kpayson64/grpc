@@ -48,12 +48,6 @@ static grpc_pollset_set_vtable vtable = {
   pollset_set_del_pollset, pollset_set_add_pollset_set,
   pollset_set_del_pollset_set};
 
-grpc_pollset_set_vtable* grpc_custom_pollset_set_vtable() {
-  return &vtable;
+void grpc_custom_pollset_set_init() {
+   grpc_set_pollset_set_vtable(&vtable);
 }
-
-#ifdef GRPC_UV
-grpc_pollset_set_vtable* grpc_default_pollset_set_vtable() {
-  return &vtable;
-}
-#endif

@@ -43,8 +43,6 @@ grpc_iomgr_platform_vtable* custom_iomgr_platform_vtable() {
   return &vtable;
 }
 
-#ifdef GRPC_UV
-grpc_iomgr_platform_vtable* grpc_default_iomgr_platform_vtable() {
-  return &vtable;
+void grpc_custom_iomgr_init() {
+   grpc_set_iomgr_platform_vtable(&vtable);
 }
-#endif

@@ -37,7 +37,9 @@
 #include "src/core/lib/slice/slice_internal.h"
 #include "src/core/lib/slice/slice_string_helpers.h"
 
-#define GRPC_TRACER_ON_TCP_TRACE 0
+//grpc_tracer_flag grpc_tcp_trace = GRPC_TRACER_INITIALIZER(true, "tcp");
+
+#define GRPC_TRACER_ON_TCP_TRACE 1
 
 grpc_socket_vtable* grpc_custom_socket_vtable = NULL;
 extern grpc_tcp_server_vtable custom_tcp_server_vtable;
@@ -130,6 +132,9 @@ void grpc_custom_read_callback(grpc_socket_wrapper* s, size_t nread, grpc_error*
   grpc_closure *cb = tcp->read_cb;
   tcp->read_cb = NULL;
   grpc_slice sub;
+  if (error == GRPC_ERROR_NONE && nread == 0) {
+    error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("EOF");
+  }
   if (error == GRPC_ERROR_NONE) {
     // Successful read
     sub = grpc_slice_sub_no_ref(tcp->read_slice, 0, (size_t)nread);

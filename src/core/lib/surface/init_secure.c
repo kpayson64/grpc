@@ -36,7 +36,34 @@
 #include "src/core/lib/security/context/security_context.h"
 #endif
 
+#ifdef GRPC_GEVENT_TEST
+#include <Python.h>
+extern void initcygrpc(void);
+
+
+static gpr_once g_basic_init = GPR_ONCE_INIT;
+
+static void do_basic_init(void) {
+  Py_Initialize();
+  initcygrpc();
+  PyObject *pName, *pModule, *pFunc;
+  pName = PyString_FromString("cygrpc");
+  pModule = PyImport_Import(pName);
+  if (!pModule) {
+    PyErr_Print();
+  }
+  pFunc = PyObject_GetAttrString(pModule, "initialize_grpc_gevent_loop");
+  if(PyObject_CallObject(pFunc, NULL) == NULL){
+    PyErr_Print();
+    GPR_ASSERT(0);
+  }
+}
+#endif
+
 void grpc_security_pre_init(void) {
+  #ifdef GRPC_GEVENT_TEST
+  gpr_once_init(&g_basic_init, do_basic_init);
+  #endif
   grpc_register_tracer(&grpc_trace_secure_endpoint);
   grpc_register_tracer(&tsi_tracing_enabled);
 #ifndef NDEBUG

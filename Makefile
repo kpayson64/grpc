@@ -2943,8 +2943,9 @@ LIBGRPC_SRC = \
     src/core/lib/iomgr/pollset_set_windows.c \
     src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
+    src/core/lib/iomgr/resolve_address.c \
+    src/core/lib/iomgr/resolve_address_custom.c \
     src/core/lib/iomgr/resolve_address_posix.c \
-    src/core/lib/iomgr/resolve_address_uv.c \
     src/core/lib/iomgr/resolve_address_windows.c \
     src/core/lib/iomgr/resource_quota.c \
     src/core/lib/iomgr/sockaddr_utils.c \
@@ -3294,8 +3295,9 @@ LIBGRPC_CRONET_SRC = \
     src/core/lib/iomgr/pollset_set_windows.c \
     src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
+    src/core/lib/iomgr/resolve_address.c \
+    src/core/lib/iomgr/resolve_address_custom.c \
     src/core/lib/iomgr/resolve_address_posix.c \
-    src/core/lib/iomgr/resolve_address_uv.c \
     src/core/lib/iomgr/resolve_address_windows.c \
     src/core/lib/iomgr/resource_quota.c \
     src/core/lib/iomgr/sockaddr_utils.c \
@@ -3612,8 +3614,9 @@ LIBGRPC_TEST_UTIL_SRC = \
     src/core/lib/iomgr/pollset_set_windows.c \
     src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
+    src/core/lib/iomgr/resolve_address.c \
+    src/core/lib/iomgr/resolve_address_custom.c \
     src/core/lib/iomgr/resolve_address_posix.c \
-    src/core/lib/iomgr/resolve_address_uv.c \
     src/core/lib/iomgr/resolve_address_windows.c \
     src/core/lib/iomgr/resource_quota.c \
     src/core/lib/iomgr/sockaddr_utils.c \
@@ -3867,8 +3870,9 @@ LIBGRPC_TEST_UTIL_UNSECURE_SRC = \
     src/core/lib/iomgr/pollset_set_windows.c \
     src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
+    src/core/lib/iomgr/resolve_address.c \
+    src/core/lib/iomgr/resolve_address_custom.c \
     src/core/lib/iomgr/resolve_address_posix.c \
-    src/core/lib/iomgr/resolve_address_uv.c \
     src/core/lib/iomgr/resolve_address_windows.c \
     src/core/lib/iomgr/resource_quota.c \
     src/core/lib/iomgr/sockaddr_utils.c \
@@ -4095,8 +4099,9 @@ LIBGRPC_UNSECURE_SRC = \
     src/core/lib/iomgr/pollset_set_windows.c \
     src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
+    src/core/lib/iomgr/resolve_address.c \
+    src/core/lib/iomgr/resolve_address_custom.c \
     src/core/lib/iomgr/resolve_address_posix.c \
-    src/core/lib/iomgr/resolve_address_uv.c \
     src/core/lib/iomgr/resolve_address_windows.c \
     src/core/lib/iomgr/resource_quota.c \
     src/core/lib/iomgr/sockaddr_utils.c \
@@ -4780,8 +4785,9 @@ LIBGRPC++_CRONET_SRC = \
     src/core/lib/iomgr/pollset_set_windows.c \
     src/core/lib/iomgr/pollset_uv.c \
     src/core/lib/iomgr/pollset_windows.c \
+    src/core/lib/iomgr/resolve_address.c \
+    src/core/lib/iomgr/resolve_address_custom.c \
     src/core/lib/iomgr/resolve_address_posix.c \
-    src/core/lib/iomgr/resolve_address_uv.c \
     src/core/lib/iomgr/resolve_address_windows.c \
     src/core/lib/iomgr/resource_quota.c \
     src/core/lib/iomgr/sockaddr_utils.c \

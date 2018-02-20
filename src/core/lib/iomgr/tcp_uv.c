@@ -41,8 +41,6 @@
 
 #define IGNORE_CONST(addr) ((struct sockaddr*)(uintptr_t)(addr))
 
-grpc_tracer_flag grpc_tcp_trace = GRPC_TRACER_INITIALIZER(true, "tcp");
-
 typedef struct {
   uv_connect_t connect_req;
   uv_write_t write_req;
@@ -60,7 +58,6 @@ typedef struct {
 
 static void uv_socket_destroy(grpc_socket_wrapper* sw) {
   uv_socket* s = sw->socket;
-  gpr_log(GPR_ERROR, "DESTROYIHNG SOCKET %p", s->handle);
   gpr_free(s->handle);
   gpr_free(s);
 }
@@ -157,13 +154,11 @@ static void uv_socket_close(grpc_socket_wrapper *s) {
   uv_close((uv_handle_t *)socket->handle, uv_close_callback);
 }
 
-static grpc_error* uv_socket_init(grpc_socket_wrapper* s, int domain) {
+static grpc_error* uv_socket_init_helper(uv_socket* socket, int domain) {
   /* Disable Nagle's Algorithm */
-  uv_socket* socket = gpr_malloc(sizeof(uv_socket));
   uv_tcp_t* tcp = gpr_malloc(sizeof(uv_tcp_t));
   int status = uv_tcp_init_ex(uv_default_loop(), tcp, (unsigned int) domain);
   socket->handle = tcp;
-  socket->handle->data = s;
   socket->write_buffers = NULL;
   socket->write_len = 0;
   socket->read_len = 0;
@@ -173,7 +168,6 @@ static grpc_error* uv_socket_init(grpc_socket_wrapper* s, int domain) {
 #ifndef GRPC_UV_TCP_HOLD_LOOP
   uv_unref((uv_handle_t *)socket->handle);
 #endif
- s->socket = socket;
  if (status != 0) {
     grpc_error* error = GRPC_ERROR_CREATE_FROM_STATIC_STRING(
         "Failed to initialize UV tcp handle");
@@ -184,6 +178,19 @@ static grpc_error* uv_socket_init(grpc_socket_wrapper* s, int domain) {
  }
  return GRPC_ERROR_NONE;
 }
+
+static grpc_error* uv_socket_init(grpc_socket_wrapper* s, void* socket, int domain) {
+  if (socket == NULL) {
+    socket = gpr_malloc(sizeof(uv_socket));
+    //TODO return error code
+    uv_socket_init_helper(socket, domain);
+  }
+  s->socket = socket;
+  uv_socket* uv_s = (uv_socket*) socket;
+  uv_s->handle->data = s;
+  return GRPC_ERROR_NONE;
+}
+
 
 static grpc_error* uv_socket_getpeername(grpc_socket_wrapper* socket, const struct sockaddr* addr, int* addr_len) {
   uv_socket* s = (uv_socket*) socket->socket;
@@ -229,14 +236,11 @@ static void uv_on_connect(uv_stream_t *server, int status) {
   }
 
   if (s->accept_ready) {
-    grpc_socket_wrapper* client = gpr_malloc(sizeof(grpc_socket_wrapper));
-    client->endpoint = NULL;
-    client->listener = NULL;
-    client->connector = NULL;
-    uv_socket_init(client, 0);
+    uv_socket* new_socket = gpr_malloc(sizeof(uv_socket));
+    uv_socket_init_helper(new_socket, 0);
     // UV documentation says this is guaranteed to succeed
-    GPR_ASSERT(uv_accept((uv_stream_t *)s->handle, (uv_stream_t *)((uv_socket*)client->socket)->handle) == 0);
-    grpc_custom_accept_callback(socket, client, GRPC_ERROR_NONE);
+    GPR_ASSERT(uv_accept((uv_stream_t *)s->handle, (uv_stream_t *)new_socket->handle) == 0);
+    grpc_custom_accept_callback(socket, new_socket, GRPC_ERROR_NONE);
   } else {
     s->pending_connections = true;
   }
@@ -247,18 +251,15 @@ grpc_error* uv_socket_accept(grpc_socket_wrapper* socket) {
   s->accept_ready = true;
   if (s->pending_connections) {
     s->pending_connections = false;
-    grpc_socket_wrapper* client = gpr_malloc(sizeof(grpc_socket_wrapper));
-    client->endpoint = NULL;
-    client->listener = NULL;
-    client->connector = NULL;
-    uv_socket_init(client, 0);
-    GPR_ASSERT(uv_accept((uv_stream_t *)s->handle, (uv_stream_t *)((uv_socket*)client->socket)->handle));
-    grpc_custom_accept_callback(socket, client, GRPC_ERROR_NONE);
+    uv_socket* new_socket = gpr_malloc(sizeof(uv_socket));
+    uv_socket_init_helper(new_socket, 0);
+    GPR_ASSERT(uv_accept((uv_stream_t *)s->handle, (uv_stream_t *)new_socket->handle));
+    grpc_custom_accept_callback(socket, new_socket, GRPC_ERROR_NONE);
   }
   return GRPC_ERROR_NONE;
 }
 
-static grpc_error* uv_socket_bind(grpc_socket_wrapper* socket, const struct sockaddr* addr, int flags) {
+static grpc_error* uv_socket_bind(grpc_socket_wrapper* socket, const struct sockaddr* addr, size_t len, int flags) {
   uv_socket* s = (uv_socket*) socket->socket;
   int status = uv_tcp_bind((uv_tcp_t *) s->handle, addr, 0);
   if (status != 0) {
@@ -327,11 +328,51 @@ static void uv_socket_connect(grpc_socket_wrapper* s, const struct sockaddr* add
                  addr, uv_tc_on_connect);
 }
 
+static void uv_resolve_callback(uv_getaddrinfo_t *req, int status,
+                                struct addrinfo *res) {
+  grpc_resolve_wrapper *r = (grpc_resolve_wrapper *)req->data;
+  grpc_error *error = GRPC_ERROR_NONE;
+
+  gpr_free(req);
+  if (status != 0) {
+    error = GRPC_ERROR_CREATE_FROM_STATIC_STRING("getaddrinfo failed");
+    error =
+        grpc_error_set_str(error, GRPC_ERROR_STR_OS_ERROR,
+                           grpc_slice_from_static_string(uv_strerror(status)));
+  }
+
+  /* Either no retry was attempted, or the retry failed. Either way, the
+     original error probably has more interesting information */
+  uv_freeaddrinfo(res);
+  grpc_custom_resolve_callback(r, res, error);
+}
+
+static void uv_resolve(grpc_resolve_wrapper* r, char* host, char* port, struct addrinfo* hints, int blocking) {
+  int s;
+  uv_getaddrinfo_t* req = gpr_malloc(sizeof(uv_getaddrinfo_t));
+  req->data = r;
+  if (blocking) {
+    s = uv_getaddrinfo(uv_default_loop(), req, NULL, host, port,
+                       hints);
+  } else {
+   s = uv_getaddrinfo(uv_default_loop(), req, uv_resolve_callback, host, port,
+                      hints);
+  }
+  if (s == 0 && blocking) {
+    grpc_custom_resolve_callback(r, NULL, GRPC_ERROR_NONE);
+  }
+  else if (s != 0) {
+       grpc_error* err = GRPC_ERROR_CREATE_FROM_STATIC_STRING("getaddrinfo failed");
+       err = grpc_error_set_str(err, GRPC_ERROR_STR_OS_ERROR,
+                                grpc_slice_from_static_string(uv_strerror(s)));
+       grpc_custom_resolve_callback(r, NULL,  err);
+  }
+
+}
 
 
-grpc_socket_vtable uv_socket_vtable = { uv_socket_init, uv_socket_connect, uv_socket_destroy, uv_socket_shutdown, uv_socket_close,
-  uv_socket_write, uv_socket_read, uv_socket_getpeername, uv_socket_getsockname, uv_socket_setsockopt,
-  uv_socket_bind, uv_socket_listen, uv_socket_accept};
+
+grpc_socket_vtable uv_socket_vtable = {uv_resolve, uv_socket_init, uv_socket_connect, uv_socket_destroy, uv_socket_shutdown, uv_socket_close, uv_socket_write, uv_socket_read, uv_socket_getpeername, uv_socket_getsockname, uv_socket_setsockopt, uv_socket_bind, uv_socket_listen, uv_socket_accept};
 
 
 #endif

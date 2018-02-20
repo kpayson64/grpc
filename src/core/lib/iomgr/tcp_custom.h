@@ -29,8 +29,7 @@
    otherwise specified.
 */
 
-#include <netinet/in.h>
-
+#include "src/core/lib/iomgr/sockaddr.h"
 #include "src/core/lib/debug/trace.h"
 #include "src/core/lib/iomgr/endpoint.h"
 
@@ -57,9 +56,11 @@ typedef struct grpc_socket_wrapper {
   int refs;
 } grpc_socket_wrapper;
 
+typedef struct grpc_resolve_wrapper grpc_resolve_wrapper;
 
 typedef struct grpc_socket_vtable {
-  grpc_error* (*init)(grpc_socket_wrapper* s, int domain);
+  void (*resolve)(grpc_resolve_wrapper* r, char* host, char* port, struct addrinfo* hints, int blocking);
+  grpc_error* (*init)(grpc_socket_wrapper* s, void* socket, int domain);
   void (*connect)(grpc_socket_wrapper* s, const struct sockaddr* addr, size_t len);
   void (*destroy)(grpc_socket_wrapper* s);
   void (*shutdown)(grpc_socket_wrapper* s);
@@ -70,22 +71,24 @@ typedef struct grpc_socket_vtable {
   grpc_error* (*getsockname)(grpc_socket_wrapper* s, const struct sockaddr* addr, int* len);
   grpc_error* (*setsockopt)(grpc_socket_wrapper* s, int level, int optname,
              		    const void *optval, socklen_t optlen);
-  grpc_error* (*bind)(grpc_socket_wrapper* s, const struct sockaddr* addr, int flags);
+  grpc_error* (*bind)(grpc_socket_wrapper* s, const struct sockaddr* addr, size_t len, int flags);
   grpc_error* (*listen)(grpc_socket_wrapper* s);
   grpc_error* (*accept)(grpc_socket_wrapper* s);
 } grpc_socket_vtable;
 
 void grpc_custom_endpoint_init(grpc_socket_vtable* impl);
+void grpc_custom_resolver_init(grpc_socket_vtable* impl);
 
 
 grpc_endpoint *custom_tcp_endpoint_create(grpc_socket_wrapper *socket,
                                           grpc_resource_quota *resource_quota,
                                           char *peer_string);
 
+void grpc_custom_resolve_callback(grpc_resolve_wrapper* r, struct addrinfo* result, grpc_error* error);
 void grpc_custom_connect_callback(grpc_socket_wrapper* s, grpc_error* error);
 void grpc_custom_write_callback(grpc_socket_wrapper* s, size_t nwritten, grpc_error* error);
 void grpc_custom_read_callback(grpc_socket_wrapper* s, size_t nread, grpc_error* error);
-void grpc_custom_accept_callback(grpc_socket_wrapper* s, grpc_socket_wrapper* client, grpc_error* error);
+void grpc_custom_accept_callback(grpc_socket_wrapper* s, void* new_socket, grpc_error* error);
 void grpc_custom_close_callback(grpc_socket_wrapper* s);
 
 void grpc_custom_close_server_callback(grpc_tcp_listener* listener);

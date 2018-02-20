@@ -33,6 +33,8 @@
 extern grpc_tracer_flag grpc_tcp_trace;
 extern grpc_socket_vtable* grpc_custom_socket_vtable;
 
+#define GRPC_TRACER_ON_GRPC_TCP_TRACE 1
+
 struct grpc_uv_tcp_connect {
   grpc_socket_wrapper* socket;
   grpc_timer alarm;
@@ -61,7 +63,7 @@ static void uv_tc_on_alarm(grpc_exec_ctx *exec_ctx, void *acp,
   int done;
   grpc_socket_wrapper* socket = acp;
   grpc_uv_tcp_connect *connect = socket->connector;
-  if (GRPC_TRACER_ON(grpc_tcp_trace)) {
+  if (GRPC_TRACER_ON_GRPC_TCP_TRACE) {
     const char *str = grpc_error_string(error);
     gpr_log(GPR_DEBUG, "CLIENT_CONNECT: %s: on_alarm: error=%s",
             connect->addr_name, str);
@@ -121,7 +123,7 @@ static void tcp_connect(grpc_exec_ctx *exec_ctx,
 
   grpc_socket_wrapper* socket = gpr_malloc(sizeof(grpc_socket_wrapper));
   socket->refs = 2;
-  grpc_custom_socket_vtable->init(socket, 0);
+  grpc_custom_socket_vtable->init(socket, NULL, 0);
   connect = gpr_zalloc(sizeof(grpc_uv_tcp_connect));
   connect->closure = closure;
   connect->endpoint = ep;
@@ -134,7 +136,7 @@ static void tcp_connect(grpc_exec_ctx *exec_ctx,
 
   connect->refs = 2;
 
-  if (GRPC_TRACER_ON(grpc_tcp_trace)) {
+  if (GRPC_TRACER_ON_GRPC_TCP_TRACE) {
     gpr_log(GPR_DEBUG, "CLIENT_CONNECT: %s: asynchronously connecting",
             connect->addr_name);
   }
@@ -147,8 +149,4 @@ static void tcp_connect(grpc_exec_ctx *exec_ctx,
 }
 
 grpc_tcp_client_vtable custom_tcp_client_vtable = {tcp_connect};
-
-#ifdef GRPC_UV_TEST
-grpc_tcp_client_vtable* default_tcp_client_vtable = &custom_tcp_client_vtable;
-#endif
 

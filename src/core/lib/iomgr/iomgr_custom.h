@@ -35,4 +35,6 @@ extern gpr_thd_id g_init_thread;
 #define GRPC_UV_ASSERT_SAME_THREAD()
 #endif /* GRPC_UV_THREAD_CHECK */
 
+void grpc_custom_iomgr_init();
+
 #endif /* GRPC_CORE_LIB_IOMGR_IOMGR_UV_H */

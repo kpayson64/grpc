@@ -28,6 +28,7 @@ include "_cygrpc/completion_queue.pyx.pxi"
 include "_cygrpc/records.pyx.pxi"
 include "_cygrpc/security.pyx.pxi"
 include "_cygrpc/server.pyx.pxi"
+include "_cygrpc/gevent.pyx.pxi"
 
 #
 # initialize gRPC

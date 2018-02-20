@@ -158,15 +158,18 @@ int grpc_sockaddr_to_string(char **out,
   }
   addr = (const struct sockaddr *)resolved_addr->addr;
   if (addr->sa_family == AF_INET) {
+    gpr_log(GPR_ERROR, "AF_INET");
     const struct sockaddr_in *addr4 = (const struct sockaddr_in *)addr;
     ip = &addr4->sin_addr;
     port = ntohs(addr4->sin_port);
   } else if (addr->sa_family == AF_INET6) {
+    gpr_log(GPR_ERROR, "AF_INET6");
     const struct sockaddr_in6 *addr6 = (const struct sockaddr_in6 *)addr;
     ip = &addr6->sin6_addr;
     port = ntohs(addr6->sin6_port);
     sin6_scope_id = addr6->sin6_scope_id;
   }
+  gpr_log(GPR_ERROR, "IP %p", ip);
   if (ip != NULL &&
       grpc_inet_ntop(addr->sa_family, ip, ntop_buf, sizeof(ntop_buf)) != NULL) {
     if (sin6_scope_id != 0) {
@@ -184,6 +187,24 @@ int grpc_sockaddr_to_string(char **out,
   /* This is probably redundant, but we wouldn't want to log the wrong error. */
   errno = save_errno;
   return ret;
+}
+
+void grpc_string_to_sockaddr(grpc_resolved_address *out, char* addr) {
+ struct sockaddr_in6* addr6 = (struct sockaddr_in6*) out->addr;
+ struct sockaddr_in* addr4 = (struct sockaddr_in*) out->addr;
+
+ if(inet_pton(AF_INET6, addr, &addr6->sin6_addr) == 1) {
+   addr6->sin6_family = AF_INET6;
+   out->len = sizeof(struct sockaddr_in6);
+ } else if(inet_pton(AF_INET, addr, &addr4->sin_addr) == 1) {
+   addr4->sin_family = AF_INET;
+   out->len = sizeof(struct sockaddr_in);
+ } else {
+   GPR_ASSERT(0);
+ }
+ char* test_out;
+ grpc_sockaddr_to_string(&test_out, out, 0);
+ gpr_log(GPR_ERROR, "STRING TO SOCKADDR %s", test_out);
 }
 
 char *grpc_sockaddr_to_uri(const grpc_resolved_address *resolved_addr) {

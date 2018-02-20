@@ -50,6 +50,7 @@ static void timer_init(grpc_exec_ctx *exec_ctx, grpc_timer *timer,
     timer->pending = false;
     return;
   }
+  gpr_log(GPR_ERROR, "TIMER ON POLLSET");
   timer->pending = true;
   timer->closure = closure;
   grpc_timer_wrapper* timer_wrapper = (grpc_timer_wrapper*) gpr_malloc(sizeof(grpc_timer_wrapper));
@@ -62,6 +63,7 @@ static void timer_init(grpc_exec_ctx *exec_ctx, grpc_timer *timer,
 
 static void timer_cancel(grpc_exec_ctx *exec_ctx, grpc_timer *timer) {
   GRPC_UV_ASSERT_SAME_THREAD();
+  gpr_log(GPR_ERROR, "TIMER CANCEL");
   grpc_timer_wrapper* tw = (grpc_timer_wrapper*) timer->custom_timer;
   if (timer->pending) {
     timer->pending = 0;
