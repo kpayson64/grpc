@@ -39,7 +39,7 @@
 #include "src/core/lib/support/block_annotate.h"
 #include "src/core/lib/support/string.h"
 
-static grpc_error *blocking_resolve_address_impl(
+grpc_error *default_blocking_resolve_address_impl(
     const char *name, const char *default_port,
     grpc_resolved_addresses **addresses) {
   struct addrinfo hints;
@@ -158,7 +158,7 @@ static void do_request_thread(grpc_exec_ctx *exec_ctx, void *rp,
   gpr_free(r);
 }
 
-static void resolve_address_impl(grpc_exec_ctx *exec_ctx, const char *name,
+void default_resolve_address_impl(grpc_exec_ctx *exec_ctx, const char *name,
                                  const char *default_port,
                                  grpc_pollset_set *interested_parties,
                                  grpc_closure *on_done,
@@ -174,6 +174,6 @@ static void resolve_address_impl(grpc_exec_ctx *exec_ctx, const char *name,
 }
 
 grpc_address_resolver_vtable grpc_default_resolver_vtable = {
-  resolve_address_impl, blocking_resolve_address_impl};
+  default_resolve_address_impl, default_blocking_resolve_address_impl};
 
 #endif

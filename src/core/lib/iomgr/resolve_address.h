@@ -63,6 +63,7 @@ grpc_error* grpc_blocking_resolve_address(
     const char *name, const char *default_port,
     grpc_resolved_addresses **addresses);
 
+void grpc_global_resolver_init();
 void grpc_set_resolver_impl(grpc_address_resolver_vtable* vtable);
 
 #endif /* GRPC_CORE_LIB_IOMGR_RESOLVE_ADDRESS_H */

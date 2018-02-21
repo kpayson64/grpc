@@ -39,8 +39,6 @@
 
 //grpc_tracer_flag grpc_tcp_trace = GRPC_TRACER_INITIALIZER(true, "tcp");
 
-#define GRPC_TRACER_ON_TCP_TRACE 1
-
 grpc_socket_vtable* grpc_custom_socket_vtable = NULL;
 extern grpc_tcp_server_vtable custom_tcp_server_vtable;
 extern grpc_tcp_client_vtable custom_tcp_client_vtable;
@@ -87,7 +85,7 @@ static void tcp_free(grpc_exec_ctx *exec_ctx, grpc_socket_wrapper *s) {
 #define TCP_REF(tcp, reason) tcp_ref((tcp), (reason), __FILE__, __LINE__)
 static void tcp_unref(grpc_exec_ctx *exec_ctx, custom_tcp_endpoint *tcp,
                       const char *reason, const char *file, int line) {
-  if (GRPC_TRACER_ON_TCP_TRACE) {
+  if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     gpr_atm val = gpr_atm_no_barrier_load(&tcp->refcount.count);
     gpr_log(file, line, GPR_LOG_SEVERITY_DEBUG,
             "TCP unref %p : %s %" PRIdPTR " -> %" PRIdPTR, tcp, reason, val,
@@ -100,7 +98,7 @@ static void tcp_unref(grpc_exec_ctx *exec_ctx, custom_tcp_endpoint *tcp,
 
 static void tcp_ref(custom_tcp_endpoint *tcp, const char *reason, const char *file,
                     int line) {
-  if (GRPC_TRACER_ON_TCP_TRACE) {
+  if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     gpr_atm val = gpr_atm_no_barrier_load(&tcp->refcount.count);
     gpr_log(file, line, GPR_LOG_SEVERITY_DEBUG,
             "TCP   ref %p : %s %" PRIdPTR " -> %" PRIdPTR, tcp, reason, val,
@@ -140,7 +138,7 @@ void grpc_custom_read_callback(grpc_socket_wrapper* s, size_t nread, grpc_error*
     sub = grpc_slice_sub_no_ref(tcp->read_slice, 0, (size_t)nread);
     grpc_slice_buffer_add(tcp->read_slices, sub);
     tcp->read_slice = alloc_read_slice(&exec_ctx, tcp->resource_user);
-    if (GRPC_TRACER_ON_TCP_TRACE) {
+    if (GRPC_TRACER_ON(grpc_tcp_trace)) {
       size_t i;
       for (i = 0; i < tcp->read_slices->count; i++) {
         char *dump = grpc_dump_slice(tcp->read_slices->slices[i],
@@ -151,7 +149,7 @@ void grpc_custom_read_callback(grpc_socket_wrapper* s, size_t nread, grpc_error*
       }
     }
   } else {
-    if (GRPC_TRACER_ON_TCP_TRACE) {
+    if (GRPC_TRACER_ON(grpc_tcp_trace)) {
       const char *str = grpc_error_string(error);
       gpr_log(GPR_DEBUG, "read: error=%s", str);
     }
@@ -173,7 +171,7 @@ static void custom_endpoint_read(grpc_exec_ctx *exec_ctx, grpc_endpoint *ep,
   grpc_slice_buffer_reset_and_unref_internal(exec_ctx, read_slices);
   TCP_REF(tcp, "read");
 
-  if (GRPC_TRACER_ON_TCP_TRACE) {
+  if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     const char *str = grpc_error_string(error);
     gpr_log(GPR_DEBUG, "Initiating read on %p: error=%s", tcp, str);
   }
@@ -195,7 +193,7 @@ void grpc_custom_write_callback(grpc_socket_wrapper* socket, size_t nwritten, gr
       tcp->outgoing_byte_idx = 0;
     }
     if (tcp->outgoing_slice_idx == tcp->write_slices->count) {
-      if (GRPC_TRACER_ON_TCP_TRACE) {
+      if (GRPC_TRACER_ON(grpc_tcp_trace)) {
         const char *str = grpc_error_string(error);
         gpr_log(GPR_DEBUG, "write complete on %p: error=%s", tcp, str);
       }
@@ -210,7 +208,7 @@ void grpc_custom_write_callback(grpc_socket_wrapper* socket, size_t nwritten, gr
        grpc_custom_socket_vtable->write(socket, buffer, len);
     }
   } else {
-    if (GRPC_TRACER_ON_TCP_TRACE) {
+    if (GRPC_TRACER_ON(grpc_tcp_trace)) {
       const char *str = grpc_error_string(error);
       gpr_log(GPR_DEBUG, "write complete on %p: error=%s", tcp, str);
     }
@@ -227,7 +225,7 @@ static void custom_endpoint_write(grpc_exec_ctx *exec_ctx, grpc_endpoint *ep,
   custom_tcp_endpoint *tcp = (custom_tcp_endpoint *)ep;
   GRPC_UV_ASSERT_SAME_THREAD();
 
-  if (GRPC_TRACER_ON_TCP_TRACE) {
+  if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     size_t j;
 
     for (j = 0; j < write_slices->count; j++) {
@@ -285,7 +283,7 @@ static void custom_endpoint_shutdown(grpc_exec_ctx *exec_ctx, grpc_endpoint *ep,
                                  grpc_error *why) {
   custom_tcp_endpoint *tcp = (custom_tcp_endpoint *)ep;
   if (!tcp->shutting_down) {
-    if (GRPC_TRACER_ON_TCP_TRACE) {
+    if (GRPC_TRACER_ON(grpc_tcp_trace)) {
       const char *str = grpc_error_string(why);
       gpr_log(GPR_DEBUG, "TCP %p shutdown why=%s", tcp->socket, str);
     }
@@ -340,7 +338,7 @@ grpc_endpoint *custom_tcp_endpoint_create(grpc_socket_wrapper* socket,
   custom_tcp_endpoint *tcp = (custom_tcp_endpoint *)gpr_malloc(sizeof(custom_tcp_endpoint));
   grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
 
-  if (GRPC_TRACER_ON_TCP_TRACE) {
+  if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     gpr_log(GPR_DEBUG, "Creating TCP endpoint %p", tcp);
   }
   memset(tcp, 0, sizeof(custom_tcp_endpoint));

@@ -568,6 +568,9 @@
     <ClCompile Include="$(SolutionDir)\..\src\core\lib\surface\init_secure.c">
       <Filter>src\core\lib\surface</Filter>
     </ClCompile>
+    <ClCompile Include="$(SolutionDir)\..\src\python\grpcio\grpc\_cython\cygrpc.c">
+      <Filter>src\python\grpcio\grpc\_cython</Filter>
+    </ClCompile>
     <ClCompile Include="$(SolutionDir)\..\src\core\tsi\fake_transport_security.c">
       <Filter>src\core\tsi</Filter>
     </ClCompile>
@@ -1759,6 +1762,18 @@
     </Filter>
     <Filter Include="src\core\tsi">
       <UniqueIdentifier>{0b0f9ab1-efa4-7f03-e446-6fb9b5227e84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\python">
+      <UniqueIdentifier>{50d054e3-a413-b871-9049-e8612ef56281}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\python\grpcio">
+      <UniqueIdentifier>{92bc7bec-9183-0f2b-47d9-31f68a980f1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\python\grpcio\grpc">
+      <UniqueIdentifier>{a75d942e-8d7a-306e-372f-0c6260f439d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\python\grpcio\grpc\_cython">
+      <UniqueIdentifier>{89423fb6-ab96-95e8-d197-239e91b777ca}</UniqueIdentifier>
     </Filter>
     <Filter Include="third_party">
       <UniqueIdentifier>{aaab30a4-2a15-732e-c141-3fbc0f0f5a7a}</UniqueIdentifier>

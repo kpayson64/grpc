@@ -30,6 +30,7 @@
 
 #include "src/core/lib/iomgr/exec_ctx.h"
 #include "src/core/lib/iomgr/executor.h"
+#include "src/core/lib/iomgr/iomgr_custom.h"
 #include "src/core/lib/iomgr/iomgr_internal.h"
 #include "src/core/lib/iomgr/network_status_tracker.h"
 #include "src/core/lib/iomgr/pollset.h"
@@ -58,6 +59,8 @@ extern grpc_custom_poller_vtable uv_pollset_vtable;
 void grpc_iomgr_init(grpc_exec_ctx *exec_ctx) {
   g_shutdown = 0;
   #ifdef GRPC_UV_TEST
+  grpc_custom_iomgr_init();
+  grpc_custom_pollset_set_init();
   grpc_custom_endpoint_init(&uv_socket_vtable);
   grpc_custom_timer_init(&uv_timer_vtable);
   grpc_custom_pollset_init(&uv_pollset_vtable);
@@ -77,6 +80,7 @@ void grpc_iomgr_init(grpc_exec_ctx *exec_ctx) {
   grpc_iomgr_platform_init();
   grpc_tcp_server_init();
   grpc_tcp_client_init();
+  grpc_global_resolver_init();
 }
 
 void grpc_iomgr_start(grpc_exec_ctx *exec_ctx) { grpc_timer_manager_init(); }

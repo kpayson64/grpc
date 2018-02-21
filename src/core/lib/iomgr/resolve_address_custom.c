@@ -90,7 +90,6 @@ static grpc_error *handle_addrinfo_result(struct addrinfo *result,
 
 void grpc_custom_resolve_callback(grpc_resolve_wrapper* r, struct addrinfo* result, grpc_error* error) {
   grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
-
   if (error == GRPC_ERROR_NONE) {
     handle_addrinfo_result(result, r->addresses);
   } else if (retry_named_port_failure(r)) {

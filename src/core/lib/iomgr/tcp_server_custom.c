@@ -32,8 +32,6 @@
 #include "src/core/lib/iomgr/tcp_server.h"
 #include "src/core/lib/iomgr/tcp_custom.h"
 
-#define GRPC_TRACER_ON_GRPC_TCP_TRACE 1
-
 extern grpc_socket_vtable* grpc_custom_socket_vtable;
 
 /* one listening port */
@@ -139,7 +137,6 @@ static void finish_shutdown(grpc_exec_ctx *exec_ctx, grpc_tcp_server *s) {
 void grpc_custom_close_server_callback(grpc_tcp_listener *sp) {
   if (sp) {
     grpc_socket_wrapper* socket = sp->socket;
-    gpr_log(GPR_ERROR, "listener socket %p", socket);
     socket->refs--;
     grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
     sp->server->open_ports--;
@@ -158,7 +155,6 @@ static void close_listener(grpc_tcp_listener *sp) {
   grpc_socket_wrapper* socket = sp->socket;
   if (!sp->closed) {
     sp->closed = true;
-    gpr_log(GPR_ERROR, "SHUTDOWN SOCKET %p", socket);
     grpc_custom_socket_vtable->close(socket);
   }
 }
@@ -217,7 +213,7 @@ static void finish_accept(grpc_exec_ctx *exec_ctx, grpc_tcp_listener *sp, grpc_s
     GRPC_LOG_IF_ERROR("getpeername error", err);
     GRPC_ERROR_UNREF(err);
   }
-  if (GRPC_TRACER_ON_GRPC_TCP_TRACE) {
+  if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     if (peer_name_string) {
       gpr_log(GPR_DEBUG, "SERVER_CONNECT: %p accepted connection: %s",
               sp->server, peer_name_string);
@@ -244,7 +240,6 @@ void grpc_custom_accept_callback(grpc_socket_wrapper* socket, void* client, grpc
   cw->endpoint = NULL;
   cw->listener = NULL;
   cw->connector = NULL;
-  gpr_log(GPR_ERROR, "CUSTOM ASCCEPT CALLBACK");
   grpc_custom_socket_vtable->init(cw, client, 0);
   if (error != GRPC_ERROR_NONE) {
     if (!sp->closed) {
@@ -269,7 +264,6 @@ static grpc_error *add_socket_to_server(grpc_tcp_server *s, grpc_socket_wrapper*
   // The last argument to uv_tcp_bind is flags
   char* res;
   grpc_sockaddr_to_string(&res, addr, 0);
-  gpr_log(GPR_ERROR, "HAVE SOCKADDR %s", res);
   error = grpc_custom_socket_vtable->bind(socket, (struct sockaddr *)addr->addr, addr->len, 0);
   if (error != GRPC_ERROR_NONE) {
     return error;
@@ -301,7 +295,6 @@ static grpc_error *add_socket_to_server(grpc_tcp_server *s, grpc_socket_wrapper*
   s->tail = sp;
   sp->server = s;
   sp->socket = socket;
-  gpr_log(GPR_ERROR, "NEW SOCKET %p", socket);
   sp->port = port;
   sp->port_index = port_index;
   sp->closed = false;
@@ -363,7 +356,7 @@ static grpc_error *tcp_server_add_port(grpc_tcp_server *s,
     addr = &wildcard;
   }
 
-  if (GRPC_TRACER_ON_GRPC_TCP_TRACE) {
+  if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     char *port_string;
     grpc_sockaddr_to_string(&port_string, addr, 0);
     const char *str = grpc_error_string(error);
@@ -382,7 +375,6 @@ static grpc_error *tcp_server_add_port(grpc_tcp_server *s,
   socket->listener = NULL;
   socket->connector = NULL;
   grpc_custom_socket_vtable->init(socket, NULL, family);
-  gpr_log(GPR_ERROR, "CREATED SOCKET %p !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", socket);
 
   if(error == GRPC_ERROR_NONE) {
 #if defined(GPR_LINUX) && defined(SO_REUSEPORT)
@@ -416,19 +408,16 @@ static void tcp_server_start(grpc_exec_ctx *exec_ctx, grpc_tcp_server *server,
   (void)pollsets;
   (void)pollset_count;
   GRPC_UV_ASSERT_SAME_THREAD();
-  if (GRPC_TRACER_ON_GRPC_TCP_TRACE) {
+  if (GRPC_TRACER_ON(grpc_tcp_trace)) {
     gpr_log(GPR_DEBUG, "SERVER_START %p", server);
   }
   GPR_ASSERT(on_accept_cb);
   GPR_ASSERT(!server->on_accept_cb);
-  gpr_log(GPR_ERROR, "STARTING SERVER");
   server->on_accept_cb = on_accept_cb;
   server->on_accept_cb_arg = cb_arg;
   for (sp = server->head; sp; sp = sp->next) {
-    gpr_log(GPR_ERROR, "ACCEPT CALLED %p", sp->socket);
     grpc_custom_socket_vtable->accept(sp->socket);
   }
-  gpr_log(GPR_ERROR, "DONE");
 }
 
 static unsigned tcp_server_port_fd_count(grpc_tcp_server *s, unsigned port_index) {
@@ -445,7 +434,6 @@ static void tcp_server_shutdown_listeners(grpc_exec_ctx *exec_ctx,
   for (grpc_tcp_listener *sp = s->head; sp; sp = sp->next) {
     if (!sp->closed) {
       sp->closed = true;
-      gpr_log(GPR_ERROR, "SHUTDOWN SOCKET %p", sp->socket);
       grpc_custom_socket_vtable->close(sp->socket);
     }
   }

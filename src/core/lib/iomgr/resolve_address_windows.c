@@ -47,7 +47,7 @@ typedef struct {
   grpc_resolved_addresses **addresses;
 } request;
 
-static grpc_error *blocking_resolve_address_impl(
+grpc_error *default_blocking_resolve_address_impl(
     const char *name, const char *default_port,
     grpc_resolved_addresses **addresses) {
   struct addrinfo hints;
@@ -141,14 +141,7 @@ static void do_request_thread(grpc_exec_ctx *exec_ctx, void *rp,
   gpr_free(r);
 }
 
-void resolved_addresses_destroy_impl(grpc_resolved_addresses *addrs) {
-  if (addrs != NULL) {
-    gpr_free(addrs->addrs);
-  }
-  gpr_free(addrs);
-}
-
-static void resolve_address_impl(grpc_exec_ctx *exec_ctx, const char *name,
+void default_resolve_address_impl(grpc_exec_ctx *exec_ctx, const char *name,
                                  const char *default_port,
                                  grpc_pollset_set *interested_parties,
                                  grpc_closure *on_done,
@@ -164,7 +157,7 @@ static void resolve_address_impl(grpc_exec_ctx *exec_ctx, const char *name,
 }
 
 grpc_resolver_vtable grpc_default_resolver_vtable = {
-  resolve_address_impl, resolve_address_blocking_impl, resolved_addresses_destroy_impl};
+  default_resolve_address_impl, default_resolve_address_blocking_impl};
 
 
 #endif

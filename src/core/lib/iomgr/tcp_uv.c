@@ -359,7 +359,7 @@ static void uv_resolve(grpc_resolve_wrapper* r, char* host, char* port, struct a
                       hints);
   }
   if (s == 0 && blocking) {
-    grpc_custom_resolve_callback(r, NULL, GRPC_ERROR_NONE);
+    grpc_custom_resolve_callback(r, req->addrinfo, GRPC_ERROR_NONE);
   }
   else if (s != 0) {
        grpc_error* err = GRPC_ERROR_CREATE_FROM_STATIC_STRING("getaddrinfo failed");

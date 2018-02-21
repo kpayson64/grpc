@@ -58,7 +58,6 @@ static size_t pollset_size() { return 1;}
 static void dummy_cb(grpc_exec_ctx* exec_ctx, void* arg, grpc_error* error) {}
 
 static void dummy_kick_cb(grpc_exec_ctx* exec_ctx, void* arg, grpc_error* error) {
-  gpr_log(GPR_ERROR, "POLLSET KICKED CB");
   kick_count--;
   if (kick_count == 0) {
     gpr_cv_signal(&no_kicks);
@@ -92,7 +91,6 @@ static void pollset_shutdown(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
                            grpc_closure *closure) {
   GRPC_UV_ASSERT_SAME_THREAD();
   // Drain any pending work without blocking
-  gpr_log(GPR_ERROR, "POLLSET SHUTDOWN CALLED");
   poller_vtable->run_loop(0);
   GRPC_CLOSURE_SCHED(exec_ctx, closure, GRPC_ERROR_NONE);
 }
@@ -104,7 +102,6 @@ static void pollset_destroy(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset) {
 static grpc_error *pollset_work(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
                               grpc_pollset_worker **worker_hdl,
                               gpr_timespec now, gpr_timespec deadline) {
-  gpr_log(GPR_ERROR, "POLLSET WORK CALLED");
   GRPC_UV_ASSERT_SAME_THREAD();
   gpr_mu_unlock(&grpc_polling_mu);
     if (gpr_time_cmp(deadline, now) > 0) {
@@ -131,7 +128,6 @@ static grpc_error *pollset_kick(grpc_pollset *pollset,
   if (kick_count > 0) {
     return GRPC_ERROR_NONE;
   }
-  gpr_log(GPR_ERROR, "POLLSET KICKED");
   kick_count++;
   // Make sure now != deadline so this ends up on the event loop
   gpr_timespec now = gpr_now(GPR_CLOCK_REALTIME);

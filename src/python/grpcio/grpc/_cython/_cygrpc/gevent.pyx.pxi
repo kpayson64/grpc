@@ -14,6 +14,7 @@
 
 cimport cpython
 from libc cimport string
+from libc.stdlib cimport malloc
 import sys
 import errno
 gevent_g = None
@@ -46,6 +47,7 @@ def initialize_grpc_gevent_loop():
   import gevent.event
   gevent_event = gevent.event
 
+  gevent_socket_vtable.resolve = socket_resolve
   gevent_socket_vtable.init = socket_init
   gevent_socket_vtable.connect = socket_connect
   gevent_socket_vtable.destroy = socket_destroy
@@ -60,13 +62,13 @@ def initialize_grpc_gevent_loop():
   gevent_socket_vtable.listen = socket_listen
   gevent_socket_vtable.accept = socket_accept
   grpc_custom_endpoint_init(&gevent_socket_vtable)
+  grpc_custom_resolver_init(&gevent_socket_vtable)
 
   gevent_timer_vtable.start = timer_start
   gevent_timer_vtable.stop = timer_stop
   grpc_custom_timer_init(&gevent_timer_vtable)
 
   gevent_pollset_vtable.run_loop = run_loop
-  gevent_pollset_vtable.kick_loop = kick_loop
   grpc_custom_pollset_init(&gevent_pollset_vtable)
 
   grpc_custom_pollset_set_init()
@@ -104,6 +106,30 @@ cdef addr_to_tuple(const sockaddr* addr, size_t addr_len):
   byte_str = byte_str.rstrip(']')
   return (byte_str, port)
 
+cdef addrinfo* tuples_to_resolvaddr(tups):
+  cdef addrinfo* prev = <addrinfo*>0
+  cdef addrinfo* root = <addrinfo*>0
+  cdef grpc_resolved_address c_addr
+  cdef sockaddr* addr
+  cdef addrinfo* addr_info
+  for tup in tups:
+    grpc_string_to_sockaddr(&c_addr, tup[4][0], tup[4][1])
+    addr = <sockaddr*> malloc(c_addr.len)
+    string.memcpy(addr, <void*> c_addr.addr, c_addr.len)
+    addr_info = <addrinfo*> malloc(sizeof(addrinfo))
+    addr_info.ai_flags = 0
+    addr_info.ai_family = tups[0]
+    addr_info.ai_socktype = tups[1]
+    addr_info.ai_protocol = tups[2]
+    addr_info.ai_canonname = <char*>0
+    addr_info.ai_addr = addr
+    addr_info.ai_next = <addrinfo*>0
+    if prev == <addrinfo*>0:
+      root = addr_info
+    else:
+      prev.ai_next = addr_info
+  return root
+
 cdef socket_connect_async_cython(SocketWrapper socket_wrapper, addr_tuple):
   print("ATTEMPTING TO CONNECT")
   (<object>socket_wrapper.c_socket.socket).connect(addr_tuple)
@@ -133,6 +159,32 @@ cdef void socket_close(grpc_socket_wrapper* s):
   print("CLOSE")
   (<object>s.socket).close()
   grpc_custom_close_callback(s)
+
+cdef socket_resolve_async_cython(ResolveWrapper resolve_wrapper):
+  try:
+    res = gevent_socket.getaddrinfo(resolve_wrapper.c_host, resolve_wrapper.c_port, resolve_wrapper.c_hints.ai_family,
+                                    resolve_wrapper.c_hints.ai_socktype, resolve_wrapper.c_hints.ai_protocol,
+                                    resolve_wrapper.c_hints.ai_flags)
+    grpc_custom_resolve_callback(<grpc_resolve_wrapper*>resolve_wrapper.c_resolver, tuples_to_resolvaddr(res), <grpc_error*>0)
+  except Exception as e:
+    grpc_custom_resolve_callback(<grpc_resolve_wrapper*>resolve_wrapper.c_resolver, <addrinfo*>0, <grpc_error*>4)
+    
+
+def socket_resolve_async(resolve_wrapper):
+  socket_resolve_async_cython(resolve_wrapper)
+
+cdef void socket_resolve(grpc_resolve_wrapper* r, char* host, char* port, addrinfo* hints, int blocking):
+  global g_greenlets
+  rw = ResolveWrapper()
+  rw.c_resolver = r
+  rw.c_host = host
+  rw.c_port = port
+  rw.c_hints = hints
+  if blocking:
+    socket_resolve_async_cython(rw)
+  else:
+    g_greenlets.add(gevent_g.spawn(socket_write_async, rw))
+
 
 cdef socket_write_async_cython(SocketWrapper socket_wrapper, bytes):
   try:  
@@ -180,8 +232,7 @@ cdef grpc_error* socket_getpeername(grpc_socket_wrapper* s, sockaddr* addr, int*
   peer = (<object>s.socket).getpeername()
 
   cdef grpc_resolved_address c_addr
-  grpc_string_to_sockaddr(&c_addr, peer[0])
-  grpc_sockaddr_set_port(&c_addr, peer[1])
+  grpc_string_to_sockaddr(&c_addr, peer[0], peer[1])
   string.memcpy(<void*>addr, <void*>c_addr.addr, c_addr.len)
   length[0] = c_addr.len
 
@@ -195,8 +246,7 @@ cdef grpc_error* socket_getsockname(grpc_socket_wrapper* s, sockaddr* addr, int*
   sys.stdout.flush()
   
   cdef grpc_resolved_address c_addr
-  grpc_string_to_sockaddr(&c_addr, peer[0])
-  grpc_sockaddr_set_port(&c_addr, peer[1])
+  grpc_string_to_sockaddr(&c_addr, peer[0], peer[1])
   string.memcpy(<void*>addr, <void*>c_addr.addr, c_addr.len)
   length[0] = c_addr.len
   print(addr_to_tuple(addr, length[0]))
@@ -289,11 +339,6 @@ cdef grpc_error* timer_stop(grpc_timer_wrapper* t):
   time_wrapper = <object>t.timer
   time_wrapper.stop()
   return grpc_error_none()
-
-cdef void kick_loop():
-  print("KICK LOOP")
-  sys.stdout.flush()
-  gevent_hub.get_hub().loop.break_()
 
 cdef void run_loop(int blocking):
   global g_greenlets

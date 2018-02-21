@@ -293,19 +293,19 @@ else
 TMPOUT = `mktemp /tmp/test-out-XXXXXX`
 endif
 
-CHECK_SHADOW_WORKS_CMD = $(CC) -std=c99 -Werror -Wshadow -o $(TMPOUT) -c test/build/shadow.c
+CHECK_SHADOW_WORKS_CMD = $(CC) -std=c99 -Wshadow -o $(TMPOUT) -c test/build/shadow.c
 HAS_WORKING_SHADOW = $(shell $(CHECK_SHADOW_WORKS_CMD) 2> /dev/null && echo true || echo false)
 ifeq ($(HAS_WORKING_SHADOW),true)
 W_SHADOW=-Wshadow
 NO_W_SHADOW=-Wno-shadow
 endif
-CHECK_EXTRA_SEMI_WORKS_CMD = $(CC) -std=c99 -Werror -Wextra-semi -o $(TMPOUT) -c test/build/extra-semi.c
+CHECK_EXTRA_SEMI_WORKS_CMD = $(CC) -std=c99 -Wextra-semi -o $(TMPOUT) -c test/build/extra-semi.c
 HAS_WORKING_EXTRA_SEMI = $(shell $(CHECK_EXTRA_SEMI_WORKS_CMD) 2> /dev/null && echo true || echo false)
 ifeq ($(HAS_WORKING_EXTRA_SEMI),true)
 W_EXTRA_SEMI=-Wextra-semi
 NO_W_EXTRA_SEMI=-Wno-extra-semi
 endif
-CHECK_NO_SHIFT_NEGATIVE_VALUE_WORKS_CMD = $(CC) -std=c99 -Werror -Wno-shift-negative-value -o $(TMPOUT) -c test/build/no-shift-negative-value.c
+CHECK_NO_SHIFT_NEGATIVE_VALUE_WORKS_CMD = $(CC) -std=c99 -Wno-shift-negative-value -o $(TMPOUT) -c test/build/no-shift-negative-value.c
 HAS_WORKING_NO_SHIFT_NEGATIVE_VALUE = $(shell $(CHECK_NO_SHIFT_NEGATIVE_VALUE_WORKS_CMD) 2> /dev/null && echo true || echo false)
 ifeq ($(HAS_WORKING_NO_SHIFT_NEGATIVE_VALUE),true)
 W_NO_SHIFT_NEGATIVE_VALUE=-Wno-shift-negative-value
@@ -327,7 +327,7 @@ CXXFLAGS += -std=c++11
 ifeq ($(SYSTEM),Darwin)
 CXXFLAGS += -stdlib=libc++
 endif
-CPPFLAGS += -g -Wall -Wextra -Werror -Wno-long-long -Wno-unused-parameter -DOSATOMIC_USE_INLINED=1
+CPPFLAGS += -g -Wall -Wextra -Wno-long-long -Wno-unused-parameter -DOSATOMIC_USE_INLINED=1
 LDFLAGS += -g
 
 CPPFLAGS += $(CPPFLAGS_$(CONFIG))
@@ -368,7 +368,7 @@ endif
 endif
 
 ifeq ($(SYSTEM),Linux)
-LIBS = dl rt m pthread
+LIBS = dl rt m pthread python2.7
 LDFLAGS += -pthread
 endif
 
@@ -400,8 +400,8 @@ AROPTS = $(GRPC_CROSS_AROPTS) # e.g., rc --target=elf32-little
 USE_BUILT_PROTOC = false
 endif
 
-GTEST_LIB = -Ithird_party/googletest/googletest/include -Ithird_party/googletest/googletest third_party/googletest/googletest/src/gtest-all.cc -Ithird_party/googletest/googlemock/include -Ithird_party/googletest/googlemock third_party/googletest/googlemock/src/gmock-all.cc
-GTEST_LIB += -lgflags
+GTEST_LIB = -I/usr/include/python2.7 -Ithird_party/googletest/googletest/include -Ithird_party/googletest/googletest third_party/googletest/googletest/src/gtest-all.cc -Ithird_party/googletest/googlemock/include -Ithird_party/googletest/googlemock third_party/googletest/googlemock/src/gmock-all.cc
+GTEST_LIB += -lgflags -lpython2.7
 ifeq ($(V),1)
 E = @:
 Q =
@@ -775,7 +775,7 @@ PROTOBUF_PKG_CONFIG = false
 PC_REQUIRES_GRPCXX =
 PC_LIBS_GRPCXX =
 
-CPPFLAGS := -Ithird_party/googletest/googletest/include -Ithird_party/googletest/googlemock/include $(CPPFLAGS)
+CPPFLAGS := -I/usr/include/python2.7 -Ithird_party/googletest/googletest/include -Ithird_party/googletest/googlemock/include $(CPPFLAGS)
 
 PROTOC_PLUGINS_ALL = $(BINDIR)/$(CONFIG)/grpc_cpp_plugin $(BINDIR)/$(CONFIG)/grpc_csharp_plugin $(BINDIR)/$(CONFIG)/grpc_node_plugin $(BINDIR)/$(CONFIG)/grpc_objective_c_plugin $(BINDIR)/$(CONFIG)/grpc_php_plugin $(BINDIR)/$(CONFIG)/grpc_python_plugin $(BINDIR)/$(CONFIG)/grpc_ruby_plugin
 PROTOC_PLUGINS_DIR = $(BINDIR)/$(CONFIG)
@@ -3083,6 +3083,7 @@ LIBGRPC_SRC = \
     src/core/lib/security/transport/tsi_error.c \
     src/core/lib/security/util/json_util.c \
     src/core/lib/surface/init_secure.c \
+    src/python/grpcio/grpc/_cython/cygrpc.c \
     src/core/tsi/fake_transport_security.c \
     src/core/tsi/gts_transport_security.c \
     src/core/tsi/ssl_transport_security.c \
@@ -3459,6 +3460,7 @@ LIBGRPC_CRONET_SRC = \
     src/core/lib/security/transport/tsi_error.c \
     src/core/lib/security/util/json_util.c \
     src/core/lib/surface/init_secure.c \
+    src/python/grpcio/grpc/_cython/cygrpc.c \
     src/core/tsi/fake_transport_security.c \
     src/core/tsi/gts_transport_security.c \
     src/core/tsi/ssl_transport_security.c \
@@ -19774,6 +19776,7 @@ src/cpp/ext/proto_server_reflection_plugin.cc: $(OPENSSL_DEP)
 src/cpp/server/secure_server_credentials.cc: $(OPENSSL_DEP)
 src/cpp/util/error_details.cc: $(OPENSSL_DEP)
 src/csharp/ext/grpc_csharp_ext.c: $(OPENSSL_DEP)
+src/python/grpcio/grpc/_cython/cygrpc.c: $(OPENSSL_DEP)
 test/core/bad_client/bad_client.c: $(OPENSSL_DEP)
 test/core/bad_ssl/server_common.c: $(OPENSSL_DEP)
 test/core/end2end/data/client_certs.c: $(OPENSSL_DEP)

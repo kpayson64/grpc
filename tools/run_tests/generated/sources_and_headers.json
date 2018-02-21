@@ -8662,7 +8662,8 @@
       "src/core/lib/security/transport/tsi_error.h", 
       "src/core/lib/security/util/json_util.c", 
       "src/core/lib/security/util/json_util.h", 
-      "src/core/lib/surface/init_secure.c"
+      "src/core/lib/surface/init_secure.c", 
+      "src/python/grpcio/grpc/_cython/cygrpc.c"
     ], 
     "third_party": false, 
     "type": "filegroup"

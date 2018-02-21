@@ -43,6 +43,9 @@
 #define GRPC_DNS_RECONNECT_MAX_BACKOFF_SECONDS 120
 #define GRPC_DNS_RECONNECT_JITTER 0.2
 
+extern grpc_error* (*default_blocking_resolve_address_impl)(const char *name, const char *default_port,
+    grpc_resolved_addresses **addresses);
+
 typedef struct {
   /** base class: must be first */
   grpc_resolver base;
@@ -305,6 +308,23 @@ static grpc_resolver_factory *dns_ares_resolver_factory_create() {
   return &dns_resolver_factory;
 }
 
+static grpc_error* resolve_address_blocking_ares(const char *name, const char *default_port,
+    grpc_resolved_addresses **addresses) {
+  return default_blocking_resolve_address_impl(name, default_port, addresses);
+}
+
+static void resolve_address_ares(grpc_exec_ctx *exec_ctx, const char *addr,
+                               const char *default_port,
+                               grpc_pollset_set *interested_parties,
+                               grpc_closure *on_done,
+                               grpc_resolved_addresses **addrs) {
+  grpc_resolve_address_ares(exec_ctx, addr, default_port, interested_parties, on_done, addrs);
+}
+
+
+static grpc_address_resolver_vtable ares_resolver = {resolve_address_ares,
+                                                     resolve_address_blocking_ares};
+
 void grpc_resolver_dns_ares_init(void) {
   char *resolver = gpr_getenv("GRPC_DNS_RESOLVER");
   /* TODO(zyc): Turn on c-ares based resolver by default after the address
@@ -315,7 +335,7 @@ void grpc_resolver_dns_ares_init(void) {
       GRPC_LOG_IF_ERROR("ares_library_init() failed", error);
       return;
     }
-    grpc_resolve_address = grpc_resolve_address_ares;
+    grpc_set_resolver_impl(&ares_resolver);
     grpc_register_resolver_type(dns_ares_resolver_factory_create());
   }
   gpr_free(resolver);

@@ -702,6 +702,7 @@ filegroups:
   - src/core/lib/security/transport/tsi_error.c
   - src/core/lib/security/util/json_util.c
   - src/core/lib/surface/init_secure.c
+  - src/python/grpcio/grpc/_cython/cygrpc.c
   secure: true
   uses:
   - grpc_base

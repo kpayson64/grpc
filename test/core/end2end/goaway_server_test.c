@@ -39,12 +39,13 @@ static void *tag(intptr_t i) { return (void *)i; }
 
 static gpr_mu g_mu;
 static int g_resolve_port = -1;
-static void (*iomgr_resolve_address)(grpc_exec_ctx *exec_ctx, const char *addr,
-                                     const char *default_port,
-                                     grpc_pollset_set *interested_parties,
-                                     grpc_closure *on_done,
-                                     grpc_resolved_addresses **addresses);
-
+extern grpc_error* (*default_blocking_resolve_address_impl)(const char *name, const char *default_port,
+    grpc_resolved_addresses **addresses);
+extern void (*default_resolve_address_impl)(grpc_exec_ctx *exec_ctx, const char *name,
+                                            const char *default_port,
+                                            grpc_pollset_set *interested_parties,
+                                            grpc_closure *on_done,
+                                            grpc_resolved_addresses **addresses);
 static grpc_ares_request *(*iomgr_dns_lookup_ares)(
     grpc_exec_ctx *exec_ctx, const char *dns_server, const char *addr,
     const char *default_port, grpc_pollset_set *interested_parties,
@@ -62,7 +63,7 @@ static void my_resolve_address(grpc_exec_ctx *exec_ctx, const char *addr,
                                grpc_closure *on_done,
                                grpc_resolved_addresses **addrs) {
   if (0 != strcmp(addr, "test")) {
-    iomgr_resolve_address(exec_ctx, addr, default_port, interested_parties,
+    default_resolve_address_impl(exec_ctx, addr, default_port, interested_parties,
                           on_done, addrs);
     return;
   }
@@ -86,6 +87,13 @@ static void my_resolve_address(grpc_exec_ctx *exec_ctx, const char *addr,
   }
   GRPC_CLOSURE_SCHED(exec_ctx, on_done, error);
 }
+
+static grpc_error* my_resolve_address_blocking(const char *name, const char *default_port,
+    grpc_resolved_addresses **addresses) {
+  return default_blocking_resolve_address_impl(name, default_port, addresses);
+}
+
+static grpc_address_resolver_vtable test_resolver = {my_resolve_address, my_resolve_address_blocking};
 
 static grpc_ares_request *my_dns_lookup_ares(
     grpc_exec_ctx *exec_ctx, const char *dns_server, const char *addr,
@@ -127,9 +135,8 @@ int main(int argc, char **argv) {
 
   gpr_mu_init(&g_mu);
   grpc_init();
-  iomgr_resolve_address = grpc_resolve_address;
+  grpc_set_resolver_impl(&test_resolver);
   iomgr_dns_lookup_ares = grpc_dns_lookup_ares;
-  grpc_resolve_address = my_resolve_address;
   grpc_dns_lookup_ares = my_dns_lookup_ares;
 
   int was_cancelled1;

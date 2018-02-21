@@ -71,9 +71,7 @@ void chttp2_init_server_fullstack(grpc_end2end_test_fixture *f,
   f->server = grpc_server_create(server_args, NULL);
   grpc_server_register_completion_queue(f->server, f->cq, NULL);
   GPR_ASSERT(grpc_server_add_insecure_http2_port(f->server, ffd->localaddr));
-  gpr_log(GPR_ERROR, "SERVER START STARTED");
   grpc_server_start(f->server);
-  gpr_log(GPR_ERROR, "SERVER START COMPLETED");
 }
 
 void chttp2_tear_down_fullstack(grpc_end2end_test_fixture *f) {
@@ -97,7 +95,6 @@ int main(int argc, char **argv) {
   grpc_test_init(argc, argv);
   grpc_end2end_tests_pre_init();
   grpc_init();
-  gpr_log(GPR_ERROR, "RUNNING TEST");
   for (i = 0; i < sizeof(configs) / sizeof(*configs); i++) {
     grpc_end2end_tests(argc, argv, configs[i]);
   }

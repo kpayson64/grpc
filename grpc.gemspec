@@ -582,6 +582,7 @@ Gem::Specification.new do |s|
   s.files += %w( src/core/lib/security/transport/tsi_error.c )
   s.files += %w( src/core/lib/security/util/json_util.c )
   s.files += %w( src/core/lib/surface/init_secure.c )
+  s.files += %w( src/python/grpcio/grpc/_cython/cygrpc.c )
   s.files += %w( src/core/tsi/fake_transport_security.c )
   s.files += %w( src/core/tsi/gts_transport_security.c )
   s.files += %w( src/core/tsi/ssl_transport_security.c )
