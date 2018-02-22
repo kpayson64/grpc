@@ -113,16 +113,21 @@ cdef addrinfo* tuples_to_resolvaddr(tups):
   cdef sockaddr* addr
   cdef addrinfo* addr_info
   for tup in tups:
+    print("1")
     grpc_string_to_sockaddr(&c_addr, tup[4][0], tup[4][1])
+    print("2")
     addr = <sockaddr*> malloc(c_addr.len)
     string.memcpy(addr, <void*> c_addr.addr, c_addr.len)
+    print("3")
     addr_info = <addrinfo*> malloc(sizeof(addrinfo))
+    print("4")
     addr_info.ai_flags = 0
-    addr_info.ai_family = tups[0]
-    addr_info.ai_socktype = tups[1]
-    addr_info.ai_protocol = tups[2]
+    addr_info.ai_family = tup[0]
+    addr_info.ai_socktype = tup[1]
+    addr_info.ai_protocol = tup[2]
     addr_info.ai_canonname = <char*>0
     addr_info.ai_addr = addr
+    addr_info.ai_addrlen = c_addr.len
     addr_info.ai_next = <addrinfo*>0
     if prev == <addrinfo*>0:
       root = addr_info
@@ -171,6 +176,7 @@ cdef socket_resolve_async_cython(ResolveWrapper resolve_wrapper):
     
 
 def socket_resolve_async(resolve_wrapper):
+  print("RESOLVING")
   socket_resolve_async_cython(resolve_wrapper)
 
 cdef void socket_resolve(grpc_resolve_wrapper* r, char* host, char* port, addrinfo* hints, int blocking):
@@ -183,7 +189,7 @@ cdef void socket_resolve(grpc_resolve_wrapper* r, char* host, char* port, addrin
   if blocking:
     socket_resolve_async_cython(rw)
   else:
-    g_greenlets.add(gevent_g.spawn(socket_write_async, rw))
+    g_greenlets.add(gevent_g.spawn(socket_resolve_async, rw))
 
 
 cdef socket_write_async_cython(SocketWrapper socket_wrapper, bytes):
@@ -191,6 +197,7 @@ cdef socket_write_async_cython(SocketWrapper socket_wrapper, bytes):
     ret = (<object>socket_wrapper.c_socket.socket).send(bytes)
     grpc_custom_write_callback(<grpc_socket_wrapper*>socket_wrapper.c_socket, ret, grpc_error_none())
   except IOError as e:
+    #TODO, should we expect EBADF?  or should we never hit it ideally?
     if e.errno == errno.EPIPE:
       grpc_custom_write_callback(<grpc_socket_wrapper*>socket_wrapper.c_socket, -1, <grpc_error*>4)
     else:
@@ -317,15 +324,25 @@ cdef grpc_error* socket_accept(grpc_socket_wrapper* s):
 cdef class TimerWrapper:
   def __cinit__(self, deadline):
     self.timer = gevent_hub.get_hub().loop.timer(deadline)
+    self.event = None
 
   def start(self):
+    global g_greenlets
+    print("start timer")
+    self.event = gevent_event.Event()
+    print(self.event.__repr__())
+    g_greenlets.add(self.event)
     self.timer.start(self.on_finish)
 
   def on_finish(self):
+    print("end timer")
+    self.event.set()
     grpc_custom_timer_callback(self.c_timer, grpc_error_none())
     self.timer.stop()
 
   def stop(self):
+    print("Cancel timer")
+    self.event.set()
     self.timer.stop()
 
 cdef grpc_error* timer_start(grpc_timer_wrapper* t):
@@ -340,19 +357,9 @@ cdef grpc_error* timer_stop(grpc_timer_wrapper* t):
   time_wrapper.stop()
   return grpc_error_none()
 
-cdef void run_loop(int blocking):
+cdef void run_loop(int timeout_ms):
   global g_greenlets
-  print(g_greenlets)
-  print("RUN LOOP %i %i" % (blocking, len(g_greenlets)))
-  print(gevent_hub.get_hub().loop)
-  sys.stdout.flush()
-  if blocking:
-    joined = gevent_g.wait(list(g_greenlets), count=1)
-    print(joined)
-    for elem in joined:
-      g_greenlets.remove(elem)
-  else:
-    joined = gevent_g.wait(list(g_greenlets), count=1, timeout=0)
-    print(joined)
-    for elem in joined:
-      g_greenlets.remove(elem)
+  print("CALLED")
+  joined = gevent_g.wait(list(g_greenlets), count=1, timeout=(timeout_ms * 1000.0))
+  for elem in joined:
+    g_greenlets.remove(elem)

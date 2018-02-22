@@ -111,6 +111,7 @@ cdef class TimerWrapper:
 
   cdef grpc_timer_wrapper *c_timer
   cdef object timer
+  cdef object event
 
 cdef class SocketWrapper:
   cdef object watcher

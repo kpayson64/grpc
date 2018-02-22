@@ -59,9 +59,9 @@ static void dummy_cb(grpc_exec_ctx* exec_ctx, void* arg, grpc_error* error) {}
 
 static void dummy_kick_cb(grpc_exec_ctx* exec_ctx, void* arg, grpc_error* error) {
   kick_count--;
-  if (kick_count == 0) {
-    gpr_cv_signal(&no_kicks);
-  }
+  //if (kick_count == 0) {
+  //  gpr_cv_signal(&no_kicks);
+  //}
 }
 
 static void pollset_global_init() {
@@ -75,9 +75,10 @@ static void pollset_global_init() {
 static void pollset_global_shutdown(void) {
   GRPC_UV_ASSERT_SAME_THREAD();
   gpr_mu_lock(&grpc_polling_mu);
-  if (kick_count > 0) {
-    gpr_cv_wait(&no_kicks, &grpc_polling_mu, gpr_inf_future(GPR_CLOCK_REALTIME));
-  }
+  //if (kick_count > 0) {
+  //  gpr_log(GPR_ERROR, "KICK COUNT %i", kick_count);
+  //  gpr_cv_wait(&no_kicks, &grpc_polling_mu, gpr_inf_future(GPR_CLOCK_REALTIME));
+  //}
   gpr_mu_unlock(&grpc_polling_mu);
   gpr_mu_destroy(&grpc_polling_mu);
 }
@@ -104,15 +105,7 @@ static grpc_error *pollset_work(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
                               gpr_timespec now, gpr_timespec deadline) {
   GRPC_UV_ASSERT_SAME_THREAD();
   gpr_mu_unlock(&grpc_polling_mu);
-    if (gpr_time_cmp(deadline, now) > 0) {
-      grpc_timer_init(exec_ctx, &g_loop_timer, deadline, &g_timer_closure, now);
-      /* Run until there is some I/O activity or the timer triggers. It doesn't
-         matter which happens */
-      poller_vtable->run_loop(1);
-      grpc_timer_cancel(exec_ctx, &g_loop_timer);
-    } else {
-      poller_vtable->run_loop(0);
-    }
+  poller_vtable->run_loop(gpr_time_to_millis(gpr_time_sub(deadline, now)));
   if (!grpc_closure_list_empty(exec_ctx->closure_list)) {
     grpc_exec_ctx_flush(exec_ctx);
   }

@@ -73,6 +73,7 @@ static grpc_error *handle_addrinfo_result(struct addrinfo *result,
       gpr_malloc(sizeof(grpc_resolved_address) * (*addresses)->naddrs);
   i = 0;
   for (resp = result; resp != NULL; resp = resp->ai_next) {
+    gpr_log(GPR_ERROR, "ADDRESS 1");
     memcpy(&(*addresses)->addrs[i].addr, resp->ai_addr, resp->ai_addrlen);
     (*addresses)->addrs[i].len = resp->ai_addrlen;
     i++;
