@@ -359,7 +359,9 @@ cdef grpc_error* timer_stop(grpc_timer_wrapper* t):
 
 cdef void run_loop(int timeout_ms):
   global g_greenlets
-  print("CALLED")
-  joined = gevent_g.wait(list(g_greenlets), count=1, timeout=(timeout_ms * 1000.0))
+  timeout = None
+  if timeout_ms >= 0:
+    timeout = timeout_ms / 1000.0
+  joined = gevent_g.wait(list(g_greenlets), count=1, timeout=timeout)
   for elem in joined:
     g_greenlets.remove(elem)

@@ -105,7 +105,13 @@ static grpc_error *pollset_work(grpc_exec_ctx *exec_ctx, grpc_pollset *pollset,
                               gpr_timespec now, gpr_timespec deadline) {
   GRPC_UV_ASSERT_SAME_THREAD();
   gpr_mu_unlock(&grpc_polling_mu);
-  poller_vtable->run_loop(gpr_time_to_millis(gpr_time_sub(deadline, now)));
+  int timeout_ms = gpr_time_to_millis(gpr_time_sub(deadline, now));
+  if(timeout_ms < 0) {
+    timeout_ms = 0;
+  } else if(gpr_time_cmp(deadline, gpr_inf_future(GPR_CLOCK_MONOTONIC)) == 0) {
+    timeout_ms = -1;
+  }
+  poller_vtable->run_loop(timeout_ms);
   if (!grpc_closure_list_empty(exec_ctx->closure_list)) {
     grpc_exec_ctx_flush(exec_ctx);
   }
