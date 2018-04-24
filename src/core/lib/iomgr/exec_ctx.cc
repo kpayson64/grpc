@@ -23,6 +23,7 @@
 #include <grpc/support/log.h>
 #include <grpc/support/sync.h>
 
+#include "src/core/lib/debug/stats.h"
 #include "src/core/lib/gprpp/thd.h"
 #include "src/core/lib/iomgr/combiner.h"
 #include "src/core/lib/profiling/timers.h"
@@ -37,6 +38,7 @@ static void exec_ctx_run(grpc_closure* closure, grpc_error* error) {
             closure->line_initiated);
   }
 #endif
+  GRPC_STATS_INC_CLOSURE_RUN_EXEC_CTX();
   closure->cb(closure->cb_arg, error);
 #ifndef NDEBUG
   if (grpc_trace_closure.enabled()) {
@@ -47,6 +49,7 @@ static void exec_ctx_run(grpc_closure* closure, grpc_error* error) {
 }
 
 static void exec_ctx_sched(grpc_closure* closure, grpc_error* error) {
+  GRPC_STATS_INC_CLOSURE_SCHED_EXEC_CTX();
   grpc_closure_list_append(grpc_core::ExecCtx::Get()->closure_list(), closure,
                            error);
 }

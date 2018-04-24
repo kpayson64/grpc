@@ -32,6 +32,19 @@
   doc: Number of client subchannels created
 - counter: server_channels_created
   doc: Number of server channels created
+- counter: closure_init
+  doc: Number of closures initialized
+- counter: closure_sched
+  doc: Number of closures scheduled
+- counter: closure_run
+  doc: Number of closures run
+- counter: closure_sched_exec_ctx
+  doc: Number of closures sched on exec_ctx
+- counter: colosure_run_exec_ctx
+  doc: Number of closures run on exec_ctx
+- counter: combiner_closure_run
+  doc: Number of closures run/scheduled on a combiner
+
 # polling
 - counter: syscall_poll
   doc: Number of polling syscalls (epoll_wait, poll, etc) made by this process

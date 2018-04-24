@@ -21,6 +21,7 @@
 
 #include <grpc/support/port_platform.h>
 
+#include "src/core/lib/debug/stats.h"
 #include <assert.h>
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
@@ -111,6 +112,7 @@ inline grpc_closure* grpc_closure_init(grpc_closure* closure,
                                        grpc_iomgr_cb_func cb, void* cb_arg,
                                        grpc_closure_scheduler* scheduler) {
 #endif
+  GRPC_STATS_INC_CLOSURE_INIT();
   closure->cb = cb;
   closure->cb_arg = cb_arg;
   closure->scheduler = scheduler;
@@ -254,6 +256,7 @@ inline void grpc_closure_run(grpc_closure* c, grpc_error* error) {
     c->line_initiated = line;
     c->run = true;
 #endif
+    GRPC_STATS_INC_CLOSURE_RUN();
     assert(c->cb);
     c->scheduler->vtable->run(c, error);
   } else {
@@ -293,6 +296,7 @@ inline void grpc_closure_sched(grpc_closure* c, grpc_error* error) {
     c->line_initiated = line;
     c->run = false;
 #endif
+    GRPC_STATS_INC_CLOSURE_SCHED();
     assert(c->cb);
     c->scheduler->vtable->sched(c, error);
   } else {
