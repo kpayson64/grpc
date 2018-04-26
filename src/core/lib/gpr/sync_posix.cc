@@ -25,12 +25,21 @@
 #include <grpc/support/sync.h>
 #include <grpc/support/time.h>
 #include <time.h>
+#include "src/core/lib/gpr/tls.h"
 #include "src/core/lib/profiling/timers.h"
 
 #ifdef GPR_LOW_LEVEL_COUNTERS
 gpr_atm gpr_mu_locks = 0;
 gpr_atm gpr_counter_atm_cas = 0;
 gpr_atm gpr_counter_atm_add = 0;
+#endif
+
+// Track the number of locks we have locked on this thread
+#ifndef NDEBUG
+GPR_TLS_DECL(locked_thread_count);
+void gpr_assert_thread_no_locks() {
+  GPR_ASSERT(gpr_tls_get(&locked_thread_count) == 0);
+}
 #endif
 
 void gpr_mu_init(gpr_mu* mu) {
@@ -43,11 +52,19 @@ void gpr_mu_lock(gpr_mu* mu) {
 #ifdef GPR_LOW_LEVEL_COUNTERS
   GPR_ATM_INC_COUNTER(gpr_mu_locks);
 #endif
+#ifndef NDEBUG
+  int count = gpr_tls_get(&locked_thread_count);
+  gpr_tls_set(&locked_thread_count, (intptr_t) count + 1);
+#endif
   GPR_TIMER_SCOPE("gpr_mu_lock", 0);
   GPR_ASSERT(pthread_mutex_lock(mu) == 0);
 }
 
 void gpr_mu_unlock(gpr_mu* mu) {
+#ifndef NDEBUG
+  int count = gpr_tls_get(&locked_thread_count);
+  gpr_tls_set(&locked_thread_count, (intptr_t) count - 1);
+#endif
   GPR_TIMER_SCOPE("gpr_mu_unlock", 0);
   GPR_ASSERT(pthread_mutex_unlock(mu) == 0);
 }
@@ -56,6 +73,12 @@ int gpr_mu_trylock(gpr_mu* mu) {
   GPR_TIMER_SCOPE("gpr_mu_trylock", 0);
   int err = pthread_mutex_trylock(mu);
   GPR_ASSERT(err == 0 || err == EBUSY);
+#ifndef NDEBUG
+  if (err == 0) {
+    int count = gpr_tls_get(&locked_thread_count);
+    gpr_tls_set(&locked_thread_count, (intptr_t) count + 1);
+  }
+#endif
   return err == 0;
 }
 

@@ -102,6 +102,10 @@ struct grpc_closure {
 };
 
 #ifndef NDEBUG
+extern void gpr_assert_thread_no_locks();
+#endif
+
+#ifndef NDEBUG
 inline grpc_closure* grpc_closure_init(const char* file, int line,
                                        grpc_closure* closure,
                                        grpc_iomgr_cb_func cb, void* cb_arg,
@@ -250,6 +254,7 @@ inline void grpc_closure_run(grpc_closure* c, grpc_error* error) {
   GPR_TIMER_SCOPE("grpc_closure_run", 0);
   if (c != nullptr) {
 #ifndef NDEBUG
+    gpr_assert_thread_no_locks();
     c->file_initiated = file;
     c->line_initiated = line;
     c->run = true;
