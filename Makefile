@@ -394,7 +394,7 @@ endif
 endif
 
 ifeq ($(SYSTEM),Linux)
-LIBS = dl rt m pthread
+LIBS = dl rt m pthread nghttp2
 LDFLAGS += -pthread
 endif
 
@@ -1190,6 +1190,7 @@ json_run_localhost: $(BINDIR)/$(CONFIG)/json_run_localhost
 memory_test: $(BINDIR)/$(CONFIG)/memory_test
 metrics_client: $(BINDIR)/$(CONFIG)/metrics_client
 mock_test: $(BINDIR)/$(CONFIG)/mock_test
+nghttp2_test: $(BINDIR)/$(CONFIG)/nghttp2_test
 nonblocking_test: $(BINDIR)/$(CONFIG)/nonblocking_test
 noop-benchmark: $(BINDIR)/$(CONFIG)/noop-benchmark
 orphanable_test: $(BINDIR)/$(CONFIG)/orphanable_test
@@ -1681,6 +1682,7 @@ buildtests_cxx: privatelibs_cxx \
   $(BINDIR)/$(CONFIG)/memory_test \
   $(BINDIR)/$(CONFIG)/metrics_client \
   $(BINDIR)/$(CONFIG)/mock_test \
+  $(BINDIR)/$(CONFIG)/nghttp2_test \
   $(BINDIR)/$(CONFIG)/nonblocking_test \
   $(BINDIR)/$(CONFIG)/noop-benchmark \
   $(BINDIR)/$(CONFIG)/orphanable_test \
@@ -1859,6 +1861,7 @@ buildtests_cxx: privatelibs_cxx \
   $(BINDIR)/$(CONFIG)/memory_test \
   $(BINDIR)/$(CONFIG)/metrics_client \
   $(BINDIR)/$(CONFIG)/mock_test \
+  $(BINDIR)/$(CONFIG)/nghttp2_test \
   $(BINDIR)/$(CONFIG)/nonblocking_test \
   $(BINDIR)/$(CONFIG)/noop-benchmark \
   $(BINDIR)/$(CONFIG)/orphanable_test \
@@ -2327,6 +2330,8 @@ test_cxx: buildtests_cxx
 	$(Q) $(BINDIR)/$(CONFIG)/memory_test || ( echo test memory_test failed ; exit 1 )
 	$(E) "[RUN]     Testing mock_test"
 	$(Q) $(BINDIR)/$(CONFIG)/mock_test || ( echo test mock_test failed ; exit 1 )
+	$(E) "[RUN]     Testing nghttp2_test"
+	$(Q) $(BINDIR)/$(CONFIG)/nghttp2_test || ( echo test nghttp2_test failed ; exit 1 )
 	$(E) "[RUN]     Testing nonblocking_test"
 	$(Q) $(BINDIR)/$(CONFIG)/nonblocking_test || ( echo test nonblocking_test failed ; exit 1 )
 	$(E) "[RUN]     Testing noop-benchmark"
@@ -3563,6 +3568,7 @@ LIBGRPC_SRC = \
     src/core/ext/filters/http/http_filters_plugin.cc \
     src/core/ext/filters/http/message_compress/message_compress_filter.cc \
     src/core/ext/filters/http/server/http_server_filter.cc \
+    src/core/ext/transport/nghttp2/nghttp2_transport.cc \
     src/core/lib/http/httpcli_security_connector.cc \
     src/core/lib/security/context/security_context.cc \
     src/core/lib/security/credentials/alts/alts_credentials.cc \
@@ -3965,6 +3971,7 @@ LIBGRPC_CRONET_SRC = \
     src/core/ext/filters/http/http_filters_plugin.cc \
     src/core/ext/filters/http/message_compress/message_compress_filter.cc \
     src/core/ext/filters/http/server/http_server_filter.cc \
+    src/core/ext/transport/nghttp2/nghttp2_transport.cc \
     src/core/ext/filters/client_channel/backup_poller.cc \
     src/core/ext/filters/client_channel/channel_connectivity.cc \
     src/core/ext/filters/client_channel/client_channel.cc \
@@ -4370,6 +4377,7 @@ LIBGRPC_TEST_UTIL_SRC = \
     src/core/ext/filters/http/http_filters_plugin.cc \
     src/core/ext/filters/http/message_compress/message_compress_filter.cc \
     src/core/ext/filters/http/server/http_server_filter.cc \
+    src/core/ext/transport/nghttp2/nghttp2_transport.cc \
 
 PUBLIC_HEADERS_C += \
     include/grpc/support/alloc.h \
@@ -4668,6 +4676,7 @@ LIBGRPC_TEST_UTIL_UNSECURE_SRC = \
     src/core/ext/filters/http/http_filters_plugin.cc \
     src/core/ext/filters/http/message_compress/message_compress_filter.cc \
     src/core/ext/filters/http/server/http_server_filter.cc \
+    src/core/ext/transport/nghttp2/nghttp2_transport.cc \
 
 PUBLIC_HEADERS_C += \
     include/grpc/support/alloc.h \
@@ -4912,6 +4921,7 @@ LIBGRPC_UNSECURE_SRC = \
     src/core/ext/filters/http/http_filters_plugin.cc \
     src/core/ext/filters/http/message_compress/message_compress_filter.cc \
     src/core/ext/filters/http/server/http_server_filter.cc \
+    src/core/ext/transport/nghttp2/nghttp2_transport.cc \
     src/core/ext/transport/chttp2/server/chttp2_server.cc \
     src/core/ext/transport/chttp2/client/insecure/channel_create.cc \
     src/core/ext/transport/chttp2/client/insecure/channel_create_posix.cc \
@@ -5712,6 +5722,7 @@ LIBGRPC++_CRONET_SRC = \
     src/core/ext/filters/http/http_filters_plugin.cc \
     src/core/ext/filters/http/message_compress/message_compress_filter.cc \
     src/core/ext/filters/http/server/http_server_filter.cc \
+    src/core/ext/transport/nghttp2/nghttp2_transport.cc \
     src/core/ext/filters/client_channel/backup_poller.cc \
     src/core/ext/filters/client_channel/channel_connectivity.cc \
     src/core/ext/filters/client_channel/client_channel.cc \
@@ -18579,6 +18590,49 @@ deps_mock_test: $(MOCK_TEST_OBJS:.o=.dep)
 ifneq ($(NO_SECURE),true)
 ifneq ($(NO_DEPS),true)
 -include $(MOCK_TEST_OBJS:.o=.dep)
+endif
+endif
+
+
+NGHTTP2_TEST_SRC = \
+    test/core/transport/nghttp2/nghttp2_test.cc \
+
+NGHTTP2_TEST_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(NGHTTP2_TEST_SRC))))
+ifeq ($(NO_SECURE),true)
+
+# You can't build secure targets if you don't have OpenSSL.
+
+$(BINDIR)/$(CONFIG)/nghttp2_test: openssl_dep_error
+
+else
+
+
+
+
+ifeq ($(NO_PROTOBUF),true)
+
+# You can't build the protoc plugins or protobuf-enabled targets if you don't have protobuf 3.5.0+.
+
+$(BINDIR)/$(CONFIG)/nghttp2_test: protobuf_dep_error
+
+else
+
+$(BINDIR)/$(CONFIG)/nghttp2_test: $(PROTOBUF_DEP) $(NGHTTP2_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgpr_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a
+	$(E) "[LD]      Linking $@"
+	$(Q) mkdir -p `dirname $@`
+	$(Q) $(LDXX) $(LDFLAGS) $(NGHTTP2_TEST_OBJS) $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgpr_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a $(LDLIBSXX) $(LDLIBS_PROTOBUF) $(LDLIBS) $(LDLIBS_SECURE) $(GTEST_LIB) -o $(BINDIR)/$(CONFIG)/nghttp2_test
+
+endif
+
+endif
+
+$(OBJDIR)/$(CONFIG)/test/core/transport/nghttp2/nghttp2_test.o:  $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc.a $(LIBDIR)/$(CONFIG)/libgpr_test_util.a $(LIBDIR)/$(CONFIG)/libgpr.a
+
+deps_nghttp2_test: $(NGHTTP2_TEST_OBJS:.o=.dep)
+
+ifneq ($(NO_SECURE),true)
+ifneq ($(NO_DEPS),true)
+-include $(NGHTTP2_TEST_OBJS:.o=.dep)
 endif
 endif
 

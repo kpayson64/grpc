@@ -31,6 +31,7 @@
 #include "src/core/ext/filters/client_channel/connector.h"
 #include "src/core/ext/filters/client_channel/http_connect_handshaker.h"
 #include "src/core/ext/filters/client_channel/subchannel.h"
+#include "src/core/ext/transport/nghttp2/nghttp2_transport.h"
 #include "src/core/ext/transport/chttp2/transport/chttp2_transport.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/channel/handshaker.h"
@@ -116,7 +117,7 @@ static void on_handshake_done(void* arg, grpc_error* error) {
     grpc_endpoint_delete_from_pollset_set(args->endpoint,
                                           c->args.interested_parties);
     c->result->transport =
-        grpc_create_chttp2_transport(args->args, args->endpoint, true);
+        grpc_create_nghttp2_transport(args->args, args->endpoint, true);
     GPR_ASSERT(c->result->transport);
     // TODO(roth): We ideally want to wait until we receive HTTP/2
     // settings from the server before we consider the connection
@@ -142,7 +143,7 @@ static void on_handshake_done(void* arg, grpc_error* error) {
     // so until after transparent retries is implemented.  Otherwise, any
     // RPC that we attempt to send on the connection before the timeout
     // would fail instead of being retried on a subsequent attempt.
-    grpc_chttp2_transport_start_reading(c->result->transport, args->read_buffer,
+    grpc_nghttp2_transport_start_reading(c->result->transport, args->read_buffer,
                                         nullptr);
     c->result->channel_args = args->args;
   }

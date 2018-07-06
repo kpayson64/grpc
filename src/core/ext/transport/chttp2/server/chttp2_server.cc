@@ -32,7 +32,7 @@
 #include <grpc/support/sync.h>
 
 #include "src/core/ext/filters/http/server/http_server_filter.h"
-#include "src/core/ext/transport/chttp2/transport/chttp2_transport.h"
+#include "src/core/ext/transport/nghttp2/nghttp2_transport.h"
 #include "src/core/ext/transport/chttp2/transport/internal.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/channel/handshaker.h"
@@ -69,40 +69,6 @@ typedef struct {
   grpc_closure on_receive_settings;
 } server_connection_state;
 
-static void server_connection_state_unref(
-    server_connection_state* connection_state) {
-  if (gpr_unref(&connection_state->refs)) {
-    if (connection_state->transport != nullptr) {
-      GRPC_CHTTP2_UNREF_TRANSPORT(connection_state->transport,
-                                  "receive settings timeout");
-    }
-    gpr_free(connection_state);
-  }
-}
-
-static void on_timeout(void* arg, grpc_error* error) {
-  server_connection_state* connection_state =
-      static_cast<server_connection_state*>(arg);
-  // Note that we may be called with GRPC_ERROR_NONE when the timer fires
-  // or with an error indicating that the timer system is being shut down.
-  if (error != GRPC_ERROR_CANCELLED) {
-    grpc_transport_op* op = grpc_make_transport_op(nullptr);
-    op->disconnect_with_error = GRPC_ERROR_CREATE_FROM_STATIC_STRING(
-        "Did not receive HTTP/2 settings before handshake timeout");
-    grpc_transport_perform_op(&connection_state->transport->base, op);
-  }
-  server_connection_state_unref(connection_state);
-}
-
-static void on_receive_settings(void* arg, grpc_error* error) {
-  server_connection_state* connection_state =
-      static_cast<server_connection_state*>(arg);
-  if (error == GRPC_ERROR_NONE) {
-    grpc_timer_cancel(&connection_state->timer);
-  }
-  server_connection_state_unref(connection_state);
-}
-
 static void on_handshake_done(void* arg, grpc_error* error) {
   grpc_handshaker_args* args = static_cast<grpc_handshaker_args*>(arg);
   server_connection_state* connection_state =
@@ -130,7 +96,7 @@ static void on_handshake_done(void* arg, grpc_error* error) {
     // code, so we can just clean up here without creating a transport.
     if (args->endpoint != nullptr) {
       grpc_transport* transport =
-          grpc_create_chttp2_transport(args->args, args->endpoint, false);
+          grpc_create_nghttp2_transport(args->args, args->endpoint, false);
       grpc_server_setup_transport(
           connection_state->svr_state->server, transport,
           connection_state->accepting_pollset, args->args);
@@ -139,19 +105,10 @@ static void on_handshake_done(void* arg, grpc_error* error) {
       connection_state->transport =
           reinterpret_cast<grpc_chttp2_transport*>(transport);
       gpr_ref(&connection_state->refs);
-      GRPC_CLOSURE_INIT(&connection_state->on_receive_settings,
-                        on_receive_settings, connection_state,
-                        grpc_schedule_on_exec_ctx);
-      grpc_chttp2_transport_start_reading(
-          transport, args->read_buffer, &connection_state->on_receive_settings);
+      grpc_nghttp2_transport_start_reading(
+          transport, args->read_buffer, nullptr);
       grpc_channel_args_destroy(args->args);
       gpr_ref(&connection_state->refs);
-      GRPC_CHTTP2_REF_TRANSPORT((grpc_chttp2_transport*)transport,
-                                "receive settings timeout");
-      GRPC_CLOSURE_INIT(&connection_state->on_timeout, on_timeout,
-                        connection_state, grpc_schedule_on_exec_ctx);
-      grpc_timer_init(&connection_state->timer, connection_state->deadline,
-                      &connection_state->on_timeout);
     }
   }
   grpc_handshake_manager_pending_list_remove(
@@ -161,7 +118,6 @@ static void on_handshake_done(void* arg, grpc_error* error) {
   grpc_handshake_manager_destroy(connection_state->handshake_mgr);
   gpr_free(connection_state->acceptor);
   grpc_tcp_server_unref(connection_state->svr_state->tcp_server);
-  server_connection_state_unref(connection_state);
 }
 
 static void on_accept(void* arg, grpc_endpoint* tcp,

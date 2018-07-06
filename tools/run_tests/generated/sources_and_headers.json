@@ -4103,6 +4103,23 @@
       "gpr", 
       "gpr_test_util", 
       "grpc", 
+      "grpc_test_util"
+    ], 
+    "headers": [], 
+    "is_filegroup": false, 
+    "language": "c++", 
+    "name": "nghttp2_test", 
+    "src": [
+      "test/core/transport/nghttp2/nghttp2_test.cc"
+    ], 
+    "third_party": false, 
+    "type": "target"
+  }, 
+  {
+    "deps": [
+      "gpr", 
+      "gpr_test_util", 
+      "grpc", 
       "grpc++", 
       "grpc++_test_util", 
       "grpc_test_util"
@@ -6966,6 +6983,7 @@
       "grpc_transport_chttp2_server_insecure", 
       "grpc_transport_chttp2_server_secure", 
       "grpc_transport_inproc", 
+      "grpc_transport_nghttp2", 
       "grpc_workaround_cronet_compression_filter"
     ], 
     "headers": [], 
@@ -10492,7 +10510,8 @@
       "gpr", 
       "grpc_base", 
       "grpc_http_filters", 
-      "grpc_transport_chttp2_alpn"
+      "grpc_transport_chttp2_alpn", 
+      "grpc_transport_nghttp2"
     ], 
     "headers": [
       "src/core/ext/transport/chttp2/transport/bin_decoder.h", 
@@ -10757,6 +10776,24 @@
     "name": "grpc_transport_inproc_headers", 
     "src": [
       "src/core/ext/transport/inproc/inproc_transport.h"
+    ], 
+    "third_party": false, 
+    "type": "filegroup"
+  }, 
+  {
+    "deps": [
+      "gpr", 
+      "grpc_base"
+    ], 
+    "headers": [
+      "src/core/ext/transport/nghttp2/nghttp2_transport.h"
+    ], 
+    "is_filegroup": true, 
+    "language": "c", 
+    "name": "grpc_transport_nghttp2", 
+    "src": [
+      "src/core/ext/transport/nghttp2/nghttp2_transport.cc", 
+      "src/core/ext/transport/nghttp2/nghttp2_transport.h"
     ], 
     "third_party": false, 
     "type": "filegroup"

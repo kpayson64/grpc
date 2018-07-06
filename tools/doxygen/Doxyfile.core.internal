@@ -1026,6 +1026,8 @@ src/core/ext/transport/chttp2/transport/writing.cc \
 src/core/ext/transport/inproc/inproc_plugin.cc \
 src/core/ext/transport/inproc/inproc_transport.cc \
 src/core/ext/transport/inproc/inproc_transport.h \
+src/core/ext/transport/nghttp2/nghttp2_transport.cc \
+src/core/ext/transport/nghttp2/nghttp2_transport.h \
 src/core/lib/README.md \
 src/core/lib/avl/avl.cc \
 src/core/lib/avl/avl.h \
